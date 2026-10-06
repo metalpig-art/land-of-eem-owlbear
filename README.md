@@ -17,3 +17,12 @@ This update fixes the token context-menu launcher and the detached character she
 5. Keep the detached sheet beside Owlbear while using dice and the map.
 
 Owlbear's custom context menu is attached to selected scene items. Depending on device/input, select the token first and then use its context menu.
+
+## v0.2.2 — Magnificent item collection
+
+- Magnificent items are stored separately from ordinary inventory so a character can own more than one as play continues.
+- A Knight-Errant starting Magnificent item is shown in both Class Perks and Inventory.
+- Later acquired or crafted Magnificent items appear in Inventory only.
+- Each Magnificent item preserves its name, slots, type, cost, worn state, source, and one or more trait names/descriptions.
+- The Inventory tab includes **+ Add Magnificent item** and **+ Trait** controls for adding new items as characters level up or acquire/craft gear.
+- Older saved Owlbear sheets that had Magnificent items inside ordinary inventory are migrated automatically when loaded.

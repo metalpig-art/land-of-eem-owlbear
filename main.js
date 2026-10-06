@@ -17,7 +17,7 @@ function emptyModel() {
     attributes: { Vim: 0, Vigor: 0, Knack: 0, Knowhow: 0 },
     courageCurrent: 0, courageMax: 0, dread: "", attack: 0, defense: 0, questPoints: 0,
     block: 0, inventorySlots: 20, xp: 0,
-    skills: {}, proficiencies: [], deficiencies: [], inventory: [], racialTraits: [], classPerks: [], abilities: [],
+    skills: {}, proficiencies: [], deficiencies: [], inventory: [], magnificentItems: [], racialTraits: [], classPerks: [], abilities: [],
     ideals: "", flaws: "", backstory: "", personalQuest: "", relationships: "", ally: "", rival: "", secondRival: "", notes: ""
   };
 }
@@ -29,6 +29,35 @@ function tokenName(item) { return item?.text?.plainText || item?.name || item?.i
 function characterTokens(items) { return items.filter(item => item.layer === "CHARACTER"); }
 function skillLabel(skill) { return skill[0].toUpperCase() + skill.slice(1); }
 function signed(v) { const n = Number(v)||0; return n > 0 ? `+${n}` : String(n); }
+
+function normalizeModelSheet(sheet = {}) {
+  const base = emptyModel();
+  const next = { ...base, ...sheet };
+  next.attributes = { ...base.attributes, ...(sheet.attributes ?? {}) };
+  next.skills = { ...(sheet.skills ?? {}) };
+  next.inventory = Array.isArray(sheet.inventory) ? [...sheet.inventory] : [];
+  next.magnificentItems = Array.isArray(sheet.magnificentItems) ? [...sheet.magnificentItems] : [];
+  const keep = [];
+  for (const raw of next.inventory) {
+    const item = typeof raw === "string" ? { name: raw, slots: 0, worn: false, source: "" } : { ...raw };
+    if ((item.traits?.length ?? 0) > 0 || /^Magnificent\b/i.test(String(item.name ?? ""))) next.magnificentItems.push({ ...item, magnificent: true, traits: Array.isArray(item.traits) ? item.traits : [], classGranted: Boolean(item.classGranted) });
+    else keep.push(item);
+  }
+  next.inventory = keep;
+  next.magnificentItems = next.magnificentItems.map(item => ({ ...item, magnificent: true, traits: Array.isArray(item.traits) ? item.traits : [], classGranted: Boolean(item.classGranted) }));
+  return next;
+}
+
+function magnificentPerkText(item) {
+  const details = (item?.traits ?? []).map(trait => `  - ${trait?.name || "[trait]"}${trait?.text ? ` ${trait.text}` : ""}`);
+  return [item?.name || "Magnificent Item", ...details].join("\n");
+}
+
+function displayedClassPerks() {
+  const base = [...(model.classPerks ?? [])].filter(text => !/^Magnificent\b/i.test(String(text).trim()));
+  const granted = (model.magnificentItems ?? []).filter(item => item.classGranted).map(magnificentPerkText);
+  return [...granted, ...base];
+}
 
 function attributeCards() {
   return ATTRIBUTE_GROUPS.map(group => {
@@ -44,15 +73,15 @@ function featureList(title, items, field, emptyText) {
 }
 
 function inventoryRows() {
-  return (model.inventory ?? []).map((item, i) => {
+  const normalRows = (model.inventory ?? []).map((item, i) => {
     const obj = typeof item === "string" ? { name:item, slots:0, worn:false, source:"" } : item;
-    return `<tr>
-      <td><input class="wear-check" data-inventory-worn="${i}" type="checkbox" ${obj.worn ? "checked" : ""}></td>
-      <td><input class="inventory-name" data-inventory-name="${i}" value="${esc(obj.name)}"></td>
-      <td><input class="inventory-slots" data-inventory-slots="${i}" type="number" min="0" value="${esc(obj.slots ?? 0)}"></td>
-      <td class="source">${esc(obj.source ?? "")}</td>
-    </tr>`;
+    return `<tr><td><input class="wear-check" data-inventory-worn="${i}" type="checkbox" ${obj.worn ? "checked" : ""}></td><td><input class="inventory-name" data-inventory-name="${i}" value="${esc(obj.name)}"></td><td><input class="inventory-slots" data-inventory-slots="${i}" type="number" min="0" value="${esc(obj.slots ?? 0)}"></td><td class="source">${esc(obj.source ?? "")}</td></tr>`;
   }).join("");
+  const magnificentRows = (model.magnificentItems ?? []).map((item, i) => {
+    const traits = (item.traits ?? []).map((trait, j) => `<div class="trait-edit"><input data-mag-trait-name="${i}:${j}" value="${esc(trait.name ?? "")}" placeholder="[trait]"><input data-mag-trait-text="${i}:${j}" value="${esc(trait.text ?? "")}" placeholder="Trait description"></div>`).join("");
+    return `<tr class="magnificent-row"><td><input class="wear-check" data-mag-worn="${i}" type="checkbox" ${item.worn ? "checked" : ""}></td><td><input class="inventory-name" data-mag-name="${i}" value="${esc(item.name ?? "Magnificent Item")}"></td><td><input class="inventory-slots" data-mag-slots="${i}" type="number" min="0" value="${esc(item.slots ?? 0)}"></td><td class="source">${esc(item.source ?? "Acquired")}${item.classGranted ? " · Class perk" : ""}</td></tr><tr class="magnificent-detail"><td></td><td colspan="3"><div class="mag-meta"><input data-mag-type="${i}" value="${esc(item.type ?? "")}" placeholder="Type"><input data-mag-cost="${i}" value="${esc(item.cost ?? "")}" placeholder="Cost"></div>${traits || `<div class="trait-edit"><input data-mag-trait-name="${i}:0" value="" placeholder="[trait]"><input data-mag-trait-text="${i}:0" value="" placeholder="Trait description"></div>`}<button class="tinyBtn addTraitBtn" data-add-trait="${i}" type="button">+ Trait</button></td></tr>`;
+  }).join("");
+  return normalRows + magnificentRows;
 }
 
 function renderTab() {
@@ -60,7 +89,7 @@ function renderTab() {
     return `<section class="tab-page inventory-page">
       <div class="inventory-summary"><strong>INVENTORY</strong><span>Capacity ${esc(model.inventorySlots)} slots</span><span>Worn items are checked; unchecked items are carried.</span></div>
       <table class="inventory-table"><thead><tr><th>Worn</th><th>Item</th><th>Slots</th><th>Source</th></tr></thead><tbody>${inventoryRows()}</tbody></table>
-      <button id="addInventoryBtn" class="smallBtn">+ Add item</button>
+      <div class="inventory-buttons"><button id="addInventoryBtn" class="smallBtn">+ Add item</button><button id="addMagnificentBtn" class="smallBtn secondary">+ Add Magnificent item</button></div>
     </section>`;
   }
   if (activeTab === "background") {
@@ -95,7 +124,7 @@ function renderTab() {
           ${featureList("Deficiencies", model.deficiencies, "deficiencies", "No deficiencies")}
         </div>
         ${featureList("Racial Traits", model.racialTraits, "racialTraits", "No racial traits")}
-        ${featureList("Class Perks", model.classPerks, "classPerks", "No class perks")}
+        ${featureList("Class Perks", displayedClassPerks(), "classPerks", "No class perks")}
         ${featureList("Abilities", model.abilities, "abilities", "No abilities")}
       </section>
     </div>
@@ -132,12 +161,20 @@ function readForm() {
   document.querySelectorAll("[data-list]").forEach(el => model[el.dataset.list] = parseList(el.value));
   (model.inventory ?? []).forEach((item, i) => {
     if (typeof item === "string") model.inventory[i] = { name:item, slots:0, worn:false, source:"" };
-    const name = document.querySelector(`[data-inventory-name="${i}"]`);
-    const slots = document.querySelector(`[data-inventory-slots="${i}"]`);
-    const worn = document.querySelector(`[data-inventory-worn="${i}"]`);
+    const name = document.querySelector(`[data-inventory-name="${i}"]`), slots = document.querySelector(`[data-inventory-slots="${i}"]`), worn = document.querySelector(`[data-inventory-worn="${i}"]`);
     if (name) model.inventory[i].name = name.value;
     if (slots) model.inventory[i].slots = Number(slots.value) || 0;
     if (worn) model.inventory[i].worn = worn.checked;
+  });
+  (model.magnificentItems ?? []).forEach((item, i) => {
+    const name = document.querySelector(`[data-mag-name="${i}"]`), slots = document.querySelector(`[data-mag-slots="${i}"]`), worn = document.querySelector(`[data-mag-worn="${i}"]`), type = document.querySelector(`[data-mag-type="${i}"]`), cost = document.querySelector(`[data-mag-cost="${i}"]`);
+    if (name) item.name = name.value;
+    if (slots) item.slots = Number(slots.value) || 0;
+    if (worn) item.worn = worn.checked;
+    if (type) item.type = type.value;
+    if (cost) item.cost = cost.value;
+    const traitInputs = [...document.querySelectorAll(`[data-mag-trait-name^="${i}:"]`)];
+    if (traitInputs.length) item.traits = traitInputs.map(input => { const key = input.dataset.magTraitName; const text = document.querySelector(`[data-mag-trait-text="${key}"]`); return { name: input.value.trim(), text: text?.value.trim() ?? "" }; }).filter(trait => trait.name || trait.text);
   });
 }
 
@@ -157,8 +194,7 @@ async function loadFromToken(id) {
   const stored = item?.metadata?.[META_KEY];
   if (stored && typeof stored === "object") {
     currentRaw = stored.source ?? null;
-    model = { ...emptyModel(), ...(stored.sheet ?? {}) };
-    model.attributes = { ...emptyModel().attributes, ...(stored.sheet?.attributes ?? {}) };
+    model = normalizeModelSheet(stored.sheet ?? {});
     render("Loaded from token.");
   } else { currentRaw = null; model = emptyModel(); render(id ? "No Land of Eem sheet on this token yet." : ""); }
 }
@@ -166,7 +202,7 @@ async function loadFromToken(id) {
 async function saveToToken() {
   readForm();
   if (!selectedTokenId) { render("Choose a Character-layer token first."); return; }
-  const payload = { version: 3, updatedAt: new Date().toISOString(), sheet: model, source: currentRaw };
+  const payload = { version: 6, updatedAt: new Date().toISOString(), sheet: model, source: currentRaw };
   await OBR.scene.items.updateItems([selectedTokenId], items => { for (const item of items) item.metadata[META_KEY] = payload; });
   await OBR.notification.show(`Saved ${model.name || "character"} to token`);
   render("Saved to Owlbear token.");
@@ -175,7 +211,7 @@ async function saveToToken() {
 function downloadJson() {
   readForm();
   const output = currentRaw && typeof currentRaw === "object" ? structuredClone(currentRaw) : { character: {} };
-  output.owlbear = { version: 3, sheet: model };
+  output.owlbear = { version: 6, sheet: model };
   const blob = new Blob([JSON.stringify(output, null, 2)], { type: "application/json" });
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${(model.name || "Land-of-Eem-character").replace(/[^a-z0-9_-]+/gi, "-")}.eem.json`; a.click(); URL.revokeObjectURL(a.href);
 }
@@ -220,16 +256,16 @@ function bind() {
   document.querySelector("#popOutBtn")?.addEventListener("click", popOutCharacter);
   document.querySelector("#exportBtn")?.addEventListener("click", downloadJson);
   document.querySelectorAll("[data-tab]").forEach(btn => btn.addEventListener("click", () => { readForm(); activeTab = btn.dataset.tab; render(); }));
-  document.querySelector("#addInventoryBtn")?.addEventListener("click", () => { readForm(); model.inventory.push({name:"New item",slots:0,worn:false,source:"Manual"}); render(); });
+  document.querySelector("#addInventoryBtn")?.addEventListener("click", () => { readForm(); model.inventory.push({name:"New item",slots:0,worn:false,type:"",cost:"",source:"Manual"}); render(); });
+  document.querySelector("#addMagnificentBtn")?.addEventListener("click", () => { readForm(); model.magnificentItems.push({name:"Magnificent Item",slots:0,worn:false,type:"",cost:"",source:"Acquired",magnificent:true,classGranted:false,traits:[{name:"[trait]",text:"Trait description"}]}); render(); });
+  document.querySelectorAll("[data-add-trait]").forEach(btn => btn.addEventListener("click", () => { readForm(); const i = Number(btn.dataset.addTrait); model.magnificentItems[i]?.traits.push({name:"[trait]",text:"Trait description"}); render(); }));
   document.querySelector("#fileInput")?.addEventListener("change", async e => {
     const file = e.target.files?.[0]; if (!file) return;
     try {
       currentRaw = JSON.parse(await file.text());
-      model = { ...emptyModel(), ...extractCharacter(currentRaw) };
-      model.attributes = { ...emptyModel().attributes, ...(model.attributes ?? {}) };
+      model = normalizeModelSheet(extractCharacter(currentRaw));
       if (currentRaw?.owlbear?.sheet) {
-        model = { ...model, ...currentRaw.owlbear.sheet };
-        model.attributes = { ...emptyModel().attributes, ...(currentRaw.owlbear.sheet.attributes ?? model.attributes) };
+        model = normalizeModelSheet({ ...model, ...currentRaw.owlbear.sheet });
       }
       activeTab = "attributes";
       render(`Imported ${file.name}. Choose a token and save.`);
@@ -263,7 +299,7 @@ function start() {
       sceneItems = items;
       const selected = sceneItems.find(i => i.id === selectedTokenId);
       const stored = selected?.metadata?.[META_KEY];
-      if (stored?.sheet) { model = { ...emptyModel(), ...stored.sheet }; model.attributes = { ...emptyModel().attributes, ...(stored.sheet.attributes ?? {}) }; }
+      if (stored?.sheet) { model = normalizeModelSheet(stored.sheet); }
       render();
     });
     OBR.scene.onReadyChange(() => refreshItems(false));

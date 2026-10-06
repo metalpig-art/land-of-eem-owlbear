@@ -101,36 +101,73 @@ function cleanList(items) {
   }).filter(Boolean);
 }
 
+function traitList(item) {
+  return (item?.traits ?? []).map(trait => ({
+    name: String(trait?.name ?? "").trim(),
+    text: String(trait?.text ?? trait?.description ?? "").trim()
+  })).filter(trait => trait.name || trait.text);
+}
+
 function equipmentItem(item, source = "Extra") {
-  if (typeof item === "string") return { name: item, slots: 0, worn: false, source };
+  if (typeof item === "string") return { name: item, slots: 0, worn: false, type: "", cost: "", source };
   return {
     id: item?.id ?? null,
     name: String(item?.name ?? item?.label ?? item?.title ?? "Unnamed item"),
     slots: Number(item?.slots) || 0,
     worn: Boolean(item?.worn),
-    type: item?.type ?? "",
+    type: String(item?.type ?? ""),
+    cost: String(item?.cost ?? ""),
     source
   };
 }
 
-function inventoryFromBuilder(root) {
-  const items = [];
-  for (const [name, slots] of HOMELAND_EQUIPMENT[root?.homeland] ?? []) {
-    items.push({ name, slots, worn: false, source: "Homeland" });
-  }
-  for (const item of root?.randomItems ?? []) items.push(equipmentItem(item, "Random item"));
-  for (const item of root?.extraItems ?? []) items.push(equipmentItem(item, "Extra item"));
-  if (root?.specialItem) items.push(equipmentItem(root.specialItem, "Special item"));
-  if (root?.gadget) items.push(equipmentItem(root.gadget, "Gadget"));
-  if (root?.weapon) items.push(equipmentItem(root.weapon, "Weapon"));
-  return items;
+function magnificentItem(item, source = "Acquired", classGranted = false) {
+  const base = equipmentItem(item, source);
+  return {
+    ...base,
+    traits: traitList(item),
+    magnificent: true,
+    classGranted: Boolean(classGranted)
+  };
 }
 
-function classChoiceList(root) {
+function isMagnificentItem(item) {
+  return Boolean(item && typeof item === "object" && ((item.traits?.length ?? 0) > 0 || /^Magnificent\b/i.test(String(item.name ?? ""))));
+}
+
+function inventoryFromBuilder(root) {
+  const inventory = [];
+  const magnificentItems = [];
+  for (const [name, slots] of HOMELAND_EQUIPMENT[root?.homeland] ?? []) {
+    inventory.push({ name, slots, worn: false, type: "", cost: "", source: "Homeland" });
+  }
+  const add = (item, source, classGranted = false) => {
+    if (!item) return;
+    if (isMagnificentItem(item)) magnificentItems.push(magnificentItem(item, source, classGranted));
+    else inventory.push(equipmentItem(item, source));
+  };
+  for (const item of root?.randomItems ?? []) add(item, "Random item");
+  for (const item of root?.extraItems ?? []) add(item, "Extra item");
+  add(root?.specialItem, root?.class === "Knight-Errant" ? "Knight-Errant starting perk" : "Special item", root?.class === "Knight-Errant");
+  add(root?.gadget, "Gadget");
+  add(root?.weapon, "Weapon");
+  return { inventory, magnificentItems };
+}
+
+function formatMagnificentPerk(item) {
+  const details = (item?.traits ?? []).map(trait => `  - ${trait.name || "[trait]"}${trait.text ? ` ${trait.text}` : ""}`);
+  return [item?.name || "Magnificent Item", ...details].join("\n");
+}
+
+function classChoiceList(root, magnificentItems = []) {
   if (!root?.classChoices || typeof root.classChoices !== "object") return [];
-  return Object.entries(root.classChoices)
+  const hasClassGrantedMagnificent = magnificentItems.some(item => item.classGranted);
+  const choices = Object.entries(root.classChoices)
     .filter(([, value]) => value)
+    .filter(([label, value]) => !(hasClassGrantedMagnificent && label === "Equipment" && /^Magnificent\b/i.test(String(value))))
     .map(([label, value]) => `${label}: ${value}`);
+  for (const item of magnificentItems.filter(item => item.classGranted)) choices.unshift(formatMagnificentPerk(item));
+  return choices;
 }
 
 function calculateSkills(root, attributes) {
@@ -178,6 +215,7 @@ export function extractCharacter(raw) {
   const defense = -attributes.Knack;
   const questPoints = 3 + attributes.Knowhow;
   const inventorySlots = 20 + (Number(skills.might) || 0) + (Number(skills.vitality) || 0);
+  const itemCollections = inventoryFromBuilder(root);
 
   return {
     name: String(root?.name ?? "Unnamed adventurer"),
@@ -199,9 +237,10 @@ export function extractCharacter(raw) {
     skills,
     proficiencies: cleanList(root?.profs ?? []),
     deficiencies: [],
-    inventory: inventoryFromBuilder(root),
+    inventory: itemCollections.inventory,
+    magnificentItems: itemCollections.magnificentItems,
     racialTraits: cleanList(root?.perks ?? []),
-    classPerks: classChoiceList(root),
+    classPerks: classChoiceList(root, itemCollections.magnificentItems),
     abilities: CLASS_ABILITIES[className] ?? [],
     ideals: String(root?.ideal ?? ""),
     flaws: String(root?.flaw ?? ""),
