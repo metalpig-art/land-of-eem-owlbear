@@ -43,6 +43,99 @@ const CLASS_ABILITIES = {
   ]
 };
 
+
+const KNIGHT_ERRANT_ABILITIES = {
+  "Wayfarer": "Wayfarer: Realms Check. Once every session, invent something about a place, landmark, or point of interest. Instant Action.",
+  "Inspiring Orders": "Inspiring Orders: Inspire Check. Twice every session, on a 6+, grant +1 to all allies’ rolls during one phase of a Conflict, grant +2 to an ally’s Check before rolling, or heal an ally for 1d6 Courage.",
+  "Tactical Combat": "Tactical Combat: Once every Combat, choose an Adversary. If the Knight-Errant and an ally are flanking that Adversary, both get +1 Attack and the target can’t Counterattack the ally.",
+  "Feat of Strength": "Feat of Strength: Might Check. Once every session, perform an act of heroic strength beyond a normal adventurer’s capabilities.",
+  "Discerning Eye": "Discerning Eye: Perception Check. Once every session, create a narrative weakness or vulnerability in someone or something within visual range. Instant Action.",
+  "Sworn Protector": "Sworn Protector: Intimidate Check. Once every Combat, on a 6+, redirect a Close or Nearby Adversary’s attack against an ally to the Knight-Errant.",
+  "Martial Prowess": "Martial Prowess: Increase Dread to 1d12. If mastered, this Ability grants +1d6 Courage.",
+  "Faithful Steed": "Faithful Steed: Wilderness Check. The steed can follow complicated orders. Gain Advantage when performing stunts or tricky maneuvers, plus the chosen mount’s special benefit.",
+  "Worldwise": "Worldwise: Realms Check. Once every session, invent a fact about a culture, faction, or group of people. Instant Action.",
+  "Sweeping Strike": "Sweeping Strike: Once every Combat, attack 1d4+1 Close and Nearby targets with one Attack roll against multiple Defenses. On a 6–8, the targets can still Counterattack.",
+  "Shrug It Off": "Shrug It Off: Once every session, Block 1d8 Dread from any source.",
+  "War Stories": "War Stories: Lore Check. Once every session, tell a story about a past adventure or historical war to help the situation or convince an NPC.",
+  "Oathbearer": "Oathbearer: Charm Check. Once every session, make a promise to an NPC which, under normal circumstances, they would not accept.",
+  "Duel": "Duel: Once every Combat, initiate a duel with a Goon or Bruiser, or make a 6+ Intimidate Check to duel a Champion. For 1d4 rounds, both combatants can only attack each other; Attack results of 3–8 count as Hit with a Counterattack.",
+  "Mighty Blow": "Mighty Blow: Once every Combat, declare a Mighty Blow before attacking. 1–2 Miss; 3–5 Hit with a Counterattack; 6–8 Hit +1d6 Dread; 9–11 Hit +2d6 Dread; 12+ Critical Hit +3d6 Dread.",
+  "Commanding Presence": "Commanding Presence: Intimidate Check. Once every session, wordlessly impress or frighten an NPC out of Conflict or multiple Goons in or out of Conflict.",
+  "Second Skin": "Second Skin: Any armor worn grants an additional -1 Defense and +1 Block, and inflicts no Disadvantage to Movement Checks.",
+  "Hero of the People": "Hero of the People: Inspire Check. Once every session, rouse common folk to help your cause. Common folk also offer shelter, food, and basic supplies.",
+  "Legendary Item": "Legendary Item: A legendary item from the Knight-Errant’s ancestors comes into their possession. Roll three times on the Relics Table and choose one to keep.",
+  "Called Shot": "Called Shot: Attack. Once every Combat, target a specific location on an Adversary, object, or structure and describe the Called Shot’s narrative effect."
+};
+
+const KNIGHT_ERRANT_LEVEL_ABILITIES = {
+  1: ["Wayfarer", "Inspiring Orders"],
+  2: ["Tactical Combat", "Feat of Strength"],
+  3: ["Discerning Eye", "Sworn Protector"],
+  4: ["Martial Prowess", "Faithful Steed"],
+  5: ["Worldwise", "Sweeping Strike"],
+  6: ["Shrug It Off", "War Stories"],
+  7: ["Oathbearer", "Duel"],
+  8: ["Mighty Blow", "Commanding Presence"],
+  9: ["Second Skin", "Hero of the People"],
+  10: ["Legendary Item", "Called Shot"]
+};
+
+function masteredAbilityNames(root) {
+  return Object.values(root?.mastery ?? {}).map(value => {
+    const text = String(value ?? "");
+    const colon = text.indexOf(":");
+    return (colon >= 0 ? text.slice(colon + 1) : text).trim();
+  }).filter(Boolean);
+}
+
+function progressionAbilities(root, className, level) {
+  if (className !== "Knight-Errant" || level <= 1) return CLASS_ABILITIES[className] ?? [];
+  const entries = [];
+  for (const value of Object.values(root?.mastery ?? {})) {
+    const text = String(value ?? "");
+    const colon = text.indexOf(":");
+    const levelPart = colon >= 0 ? text.slice(0, colon).trim() : "";
+    const name = (colon >= 0 ? text.slice(colon + 1) : text).trim();
+    if (name && !entries.some(entry => entry.name === name)) entries.push({ name, label: levelPart ? `LV ${levelPart} MASTERED` : "MASTERED" });
+  }
+  for (const name of KNIGHT_ERRANT_LEVEL_ABILITIES[Math.min(10, level)] ?? []) {
+    if (!entries.some(entry => entry.name === name)) entries.push({ name, label: `LV ${level}` });
+  }
+  for (const extra of root?.extraAbilities ?? []) {
+    const text = String(extra?.name ?? extra?.ability ?? extra ?? "").trim();
+    const name = text.includes(":") && /^\d+:/.test(text) ? text.slice(text.indexOf(":") + 1).trim() : text;
+    if (name && !entries.some(entry => entry.name === name)) entries.push({ name, label: "EXTRA ABILITY" });
+  }
+  return entries.map(({ name, label }) => {
+    let text = KNIGHT_ERRANT_ABILITIES[name] ?? name;
+    if (name === "Legendary Item" && root?.abilityChoices?.["Legendary Item"]) text += ` Chosen item: ${root.abilityChoices["Legendary Item"]}.`;
+    return `${label} — ${text}`;
+  });
+}
+
+function hasMastered(root, abilityName) {
+  return masteredAbilityNames(root).some(name => name.toLowerCase() === String(abilityName).toLowerCase());
+}
+
+function hasWornArmor(itemCollections) {
+  return [...(itemCollections.inventory ?? []), ...(itemCollections.magnificentItems ?? [])]
+    .some(item => item?.worn && /armor|breastplate|mail|bascinet|helm/i.test(`${item?.type ?? ""} ${item?.name ?? ""}`));
+}
+
+function progressionDeficiencies(root) {
+  const out = [];
+  const texts = [root?.quirk, ...(root?.perks ?? [])].filter(Boolean);
+  for (const text of texts) {
+    const match = String(text).match(/Deficiency\s+in\s+([^.;]+)/i);
+    if (match) out.push(match[1].trim());
+  }
+  return [...new Set(out)];
+}
+
+function appendStory(primary, secondary) {
+  return [primary, secondary].map(v => String(v ?? "").trim()).filter(Boolean).join("\n");
+}
+
 const HOMELAND_EQUIPMENT = {
   "The Drippy Downs": [
     ["Bear Trap",1],["Bedroll",1],["Canteen",1],["Knife",1],["Normal Rations",1],["Umbrella",1],["Walking Stick",2],["Cookware",2]
@@ -151,6 +244,8 @@ function inventoryFromBuilder(root) {
   add(root?.specialItem, root?.class === "Knight-Errant" ? "Knight-Errant starting perk" : "Special item", root?.class === "Knight-Errant");
   add(root?.gadget, "Gadget");
   add(root?.weapon, "Weapon");
+  const legendary = String(root?.abilityChoices?.["Legendary Item"] ?? "").trim();
+  if (legendary) inventory.push({ name: legendary, slots: 0, worn: false, type: "Relic", cost: "", source: "Level 10 Legendary Item" });
   return { inventory, magnificentItems };
 }
 
@@ -210,12 +305,30 @@ export function extractCharacter(raw) {
   const skills = calculateSkills(root, attributes);
   const className = String(root?.class ?? "");
   const classStats = CLASS_STATS[className] ?? { courage: 0, dread: "" };
-  const courageMax = classStats.courage ? classStats.courage + attributes.Vim : 0;
-  const attack = attributes.Vigor;
-  const defense = -attributes.Knack;
-  const questPoints = 3 + attributes.Knowhow;
-  const inventorySlots = 20 + (Number(skills.might) || 0) + (Number(skills.vitality) || 0);
+  const level = Math.max(1, Math.min(10, Number(root?.level) || 1));
   const itemCollections = inventoryFromBuilder(root);
+  let courageMax = classStats.courage ? classStats.courage + attributes.Vim : 0;
+  let dread = classStats.dread;
+  let attack = attributes.Vigor;
+  let defense = -attributes.Knack;
+  let questPoints = 3 + attributes.Knowhow;
+  let block = deriveBlock(root);
+  if (className === "Knight-Errant" && hasMastered(root, "Martial Prowess")) {
+    dread = "d12";
+    courageMax += Number(root?.martialCourage) || 0;
+  }
+  if (className === "Knight-Errant" && hasMastered(root, "Second Skin") && hasWornArmor(itemCollections)) {
+    defense -= 1;
+    block += 1;
+  }
+  for (const item of itemCollections.magnificentItems ?? []) {
+    if (!item?.worn) continue;
+    for (const trait of item?.traits ?? []) {
+      const blockMatch = String(trait?.text ?? "").match(/\+(\d+)\s*Block/i);
+      if (blockMatch) block += Number(blockMatch[1]) || 0;
+    }
+  }
+  const inventorySlots = 20 + (Number(skills.might) || 0) + (Number(skills.vitality) || 0);
 
   return {
     name: String(root?.name ?? "Unnamed adventurer"),
@@ -223,27 +336,27 @@ export function extractCharacter(raw) {
     className,
     folk: String(root?.folk ?? ""),
     homeland: String(root?.homeland ?? ""),
-    level: 1,
+    level,
     attributes,
     courageCurrent: courageMax,
     courageMax,
-    dread: classStats.dread,
+    dread,
     attack,
     defense,
     questPoints,
-    block: deriveBlock(root),
+    block,
     inventorySlots,
-    xp: 0,
+    xp: Number(root?.xp) || 0,
     skills,
     proficiencies: cleanList(root?.profs ?? []),
-    deficiencies: [],
+    deficiencies: progressionDeficiencies(root),
     inventory: itemCollections.inventory,
     magnificentItems: itemCollections.magnificentItems,
-    racialTraits: cleanList(root?.perks ?? []),
+    racialTraits: cleanList([...(root?.perks ?? []), ...(root?.quirk ? [root.quirk] : [])]),
     classPerks: classChoiceList(root, itemCollections.magnificentItems),
-    abilities: CLASS_ABILITIES[className] ?? [],
-    ideals: String(root?.ideal ?? ""),
-    flaws: String(root?.flaw ?? ""),
+    abilities: progressionAbilities(root, className, level),
+    ideals: appendStory(root?.ideal, root?.secondIdeal ? `Second Ideal: ${root.secondIdeal}` : ""),
+    flaws: appendStory(root?.flaw, root?.secondFlaw ? `Second Flaw: ${root.secondFlaw}` : ""),
     backstory: String(root?.backstory ?? ""),
     personalQuest: String(root?.quest ?? ""),
     relationships: String(root?.relationships ?? ""),

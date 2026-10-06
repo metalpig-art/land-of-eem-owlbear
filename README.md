@@ -1,4 +1,9 @@
-# Land of Eem Character Sheet for Owlbear Rodeo — v0.2.1
+# Land of Eem Character Sheet for Owlbear Rodeo — v0.2.5
+
+## v0.2.5
+
+Adds progression-aware imports for leveled characters. The level 10 Knight-Errant save format now imports its level, XP, mastered abilities, current-level abilities, Martial Prowess Courage/Dread changes, Second Skin armor effects, second Ideal/Flaw, deficiency from quirks, and Legendary Item choice.
+
 
 This update fixes the token context-menu launcher and the detached character sheet connection.
 
@@ -18,7 +23,7 @@ This update fixes the token context-menu launcher and the detached character she
 
 Owlbear's custom context menu is attached to selected scene items. Depending on device/input, select the token first and then use its context menu.
 
-## v0.2.3 — Magnificent item collection
+## v0.2.4 — Magnificent item collection
 
 - Magnificent items are stored separately from ordinary inventory so a character can own more than one as play continues.
 - A Knight-Errant starting Magnificent item is shown in both Class Perks and Inventory.
@@ -27,7 +32,7 @@ Owlbear's custom context menu is attached to selected scene items. Depending on 
 - The Inventory tab includes **+ Add Magnificent item** and **+ Trait** controls for adding new items as characters level up or acquire/craft gear.
 - Older saved Owlbear sheets that had Magnificent items inside ordinary inventory are migrated automatically when loaded.
 
-## v0.2.3
+## v0.2.4
 - Added trash-can controls at the far right of inventory item names.
 - Added per-trait trash controls for Magnificent items.
 - Whole-item deletion asks for confirmation; trait removal is immediate.

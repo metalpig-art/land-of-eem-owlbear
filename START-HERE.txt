@@ -1,14 +1,10 @@
-LAND OF EEM OWLBEAR UPDATE v0.1.6
+LAND OF EEM OWLBEAR UPDATE v0.2.5
 
-Replace these files in your GitHub repository:
-- extract.js
-- main.js
-- style.css
-- manifest.json
+This version adds progression-aware import for leveled characters, including the uploaded level 10 Knight-Errant format.
 
-The other files can remain as they are.
+Upload everything in this folder over the existing files in your GitHub repository.
 
-After GitHub Pages finishes deploying, reinstall/update Owlbear using:
-https://metalpig-art.github.io/land-of-eem-owlbear/manifest.json?v=016
+After GitHub Pages finishes deploying, update Owlbear using:
+https://metalpig-art.github.io/land-of-eem-owlbear/manifest.json?v=025
 
 Fully close the Owlbear tab and reopen it after updating.
