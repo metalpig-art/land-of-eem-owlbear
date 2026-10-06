@@ -42,7 +42,7 @@ OBR.onReady(async () => {
   await OBR.contextMenu.create({
     id: `${EXT_ID}/open-character`,
     icons: [{
-      icon: "https://metalpig-art.github.io/land-of-eem-owlbear/icon.png",
+      icon: "https://metalpig-art.github.io/land-of-eem-owlbear/icon.svg",
       label: "Open Land of Eem Character",
       filter: {
         min: 1,
