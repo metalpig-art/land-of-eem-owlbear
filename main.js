@@ -180,6 +180,26 @@ function downloadJson() {
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${(model.name || "Land-of-Eem-character").replace(/[^a-z0-9_-]+/gi, "-")}.eem.json`; a.click(); URL.revokeObjectURL(a.href);
 }
 
+window.addEventListener("message", async event => {
+  if (event.origin !== location.origin) return;
+  const msg = event.data ?? {};
+  if (msg.source !== EXT_ID || !msg.requestId) return;
+  try {
+    if (msg.type === "popout-load") {
+      const item = sceneItems.find(i => i.id === msg.tokenId);
+      const payload = item?.metadata?.[META_KEY] ?? null;
+      event.source?.postMessage({ source: EXT_ID, requestId: msg.requestId, type: "popout-load-result", ok: !!payload?.sheet, payload }, event.origin);
+    } else if (msg.type === "popout-save") {
+      await OBR.scene.items.updateItems([msg.tokenId], items => {
+        for (const item of items) item.metadata[META_KEY] = msg.payload;
+      });
+      event.source?.postMessage({ source: EXT_ID, requestId: msg.requestId, type: "popout-save-result", ok: true }, event.origin);
+    }
+  } catch (error) {
+    event.source?.postMessage({ source: EXT_ID, requestId: msg.requestId, type: `${msg.type}-result`, ok: false, error: String(error?.message ?? error) }, event.origin);
+  }
+});
+
 function popOutCharacter() {
   readForm();
   if (!selectedTokenId) { render("Choose a Character token first, then save it before popping out."); return; }

@@ -1,30 +1,14 @@
-LAND OF EEM CHARACTER SHEET FOR OWLBEAR RODEO
+LAND OF EEM OWLBEAR UPDATE v0.1.6
 
-This folder is the ready-to-host static extension.
+Replace these files in your GitHub repository:
+- extract.js
+- main.js
+- style.css
+- manifest.json
 
-1. Upload ALL files in this folder to an HTTPS static web host.
-   Examples: GitHub Pages, Cloudflare Pages, Netlify, Vercel.
+The other files can remain as they are.
 
-2. Find the public URL to manifest.json. It will look like:
-   https://your-site.example/manifest.json
+After GitHub Pages finishes deploying, reinstall/update Owlbear using:
+https://metalpig-art.github.io/land-of-eem-owlbear/manifest.json?v=016
 
-3. In Owlbear Rodeo, open your Profile > Extensions > Add Extension.
-
-4. Paste the manifest.json URL and add the extension.
-
-5. Enable the extension in your room.
-
-6. Put the player token on Owlbear's CHARACTER layer.
-
-7. Open the Land of Eem extension, import the .eem.json saved by the
-   existing character builder, select the token, and click Save to token.
-
-The character sheet is then stored with the token in Owlbear scene metadata.
-Other users in the room will receive scene updates normally through Owlbear.
-
-NOTE ABOUT ONEDRIVE
-A normal OneDrive share link is file sharing, not an HTTPS static web host,
-so it is not the right install URL for an Owlbear extension.
-
-CURRENT VERSION
-0.1.0
+Fully close the Owlbear tab and reopen it after updating.
