@@ -1,5 +1,3 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#efe1b9"/>
-  <path d="M15 13h34v8H23v8h22v8H23v8h26v8H15z" fill="#2b3a2e"/>
-  <circle cx="48" cy="17" r="5" fill="#b34b34"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Land of Eem E icon">
+  <path d="M14 8h38v10H26v9h22v10H26v9h26v10H14V8Z" fill="#244b35" stroke="#f3e8c8" stroke-width="2" stroke-linejoin="round"/>
 </svg>
