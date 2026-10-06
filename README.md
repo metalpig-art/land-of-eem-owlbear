@@ -7,7 +7,7 @@ Ready-to-host static extension. It works as a companion to the existing Land of 
 - Imports builder `.eem.json` files.
 - Stores the imported source and playable sheet on an Owlbear token.
 - In-session editing for Courage, Dread, Attack, Defense, Quest Points, all 16 skills, inventory, abilities/perks, and notes.
-- Uses the namespaced metadata key `com.pipeworks.land-of-eem/character`.
+- Uses the namespaced metadata key `com.metalpig.land-of-eem/character`.
 - Scene item metadata synchronizes with the Owlbear room.
 - Can export an `.eem.json` containing the original save plus `owlbear.sheet` play-state data.
 
