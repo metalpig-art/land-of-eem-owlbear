@@ -1,7 +1,9 @@
 import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
 import { extractCharacter, ATTRIBUTE_GROUPS } from "./extract.js";
 
-const META_KEY = "com.metalpig.land-of-eem/character";
+const EXT_ID = "com.metalpig.land-of-eem";
+const META_KEY = `${EXT_ID}/character`;
+const OPEN_TOKEN_KEY = `${EXT_ID}/open-token`;
 const app = document.querySelector("#app");
 let sceneItems = [];
 let selectedTokenId = "";
@@ -118,7 +120,7 @@ function render(message = "") {
     </section>
     <nav class="tabs"><button data-tab="attributes" class="${activeTab === "attributes" ? "active" : ""}">Attributes</button><button data-tab="inventory" class="${activeTab === "inventory" ? "active" : ""}">Inventory</button><button data-tab="background" class="${activeTab === "background" ? "active" : ""}">Background</button></nav>
     ${renderTab()}
-    <div class="actions"><button id="saveBtn">Save to token</button><button id="exportBtn" class="secondary">Export .eem.json</button></div>
+    <div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div>
   </main>`;
   bind();
 }
@@ -178,10 +180,24 @@ function downloadJson() {
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${(model.name || "Land-of-Eem-character").replace(/[^a-z0-9_-]+/gi, "-")}.eem.json`; a.click(); URL.revokeObjectURL(a.href);
 }
 
+function popOutCharacter() {
+  readForm();
+  if (!selectedTokenId) { render("Choose a Character token first, then save it before popping out."); return; }
+  const item = sceneItems.find(i => i.id === selectedTokenId);
+  const stored = item?.metadata?.[META_KEY];
+  if (!stored?.sheet) { render("Save this character to the token before popping it out."); return; }
+  const url = new URL("./popout.html", window.location.href);
+  url.searchParams.set("token", selectedTokenId);
+  const popupName = `land-of-eem-${selectedTokenId}`;
+  const win = window.open(url.href, popupName, "popup=yes,width=760,height=900,resizable=yes,scrollbars=yes");
+  if (!win) render("Your browser blocked the pop-out window. Allow pop-ups for this site and try again.");
+}
+
 function bind() {
   document.querySelector("#refreshBtn")?.addEventListener("click", () => refreshItems());
   document.querySelector("#tokenSelect")?.addEventListener("change", e => loadFromToken(e.target.value));
   document.querySelector("#saveBtn")?.addEventListener("click", saveToToken);
+  document.querySelector("#popOutBtn")?.addEventListener("click", popOutCharacter);
   document.querySelector("#exportBtn")?.addEventListener("click", downloadJson);
   document.querySelectorAll("[data-tab]").forEach(btn => btn.addEventListener("click", () => { readForm(); activeTab = btn.dataset.tab; render(); }));
   document.querySelector("#addInventoryBtn")?.addEventListener("click", () => { readForm(); model.inventory.push({name:"New item",slots:0,worn:false,source:"Manual"}); render(); });
@@ -207,6 +223,22 @@ function start() {
     await OBR.action.setWidth(640);
     await OBR.action.setHeight(780);
     await refreshItems(false);
+
+    // If the sheet was opened from the token context menu, load that token immediately.
+    const playerMetadata = await OBR.player.getMetadata();
+    const requestedTokenId = playerMetadata?.[OPEN_TOKEN_KEY];
+    if (requestedTokenId && sceneItems.some(i => i.id === requestedTokenId)) {
+      await loadFromToken(requestedTokenId);
+    }
+
+    // Keep an already-open sheet in sync with future context-menu opens.
+    OBR.player.onChange(async player => {
+      const nextTokenId = player?.metadata?.[OPEN_TOKEN_KEY];
+      if (nextTokenId && nextTokenId !== selectedTokenId && sceneItems.some(i => i.id === nextTokenId)) {
+        await loadFromToken(nextTokenId);
+      }
+    });
+
     OBR.scene.items.onChange(items => {
       sceneItems = items;
       const selected = sceneItems.find(i => i.id === selectedTokenId);
