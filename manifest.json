@@ -1,6 +1,6 @@
 {
   "name": "Land of Eem Character Sheet",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "manifest_version": 1,
   "description": "Import Land of Eem builder saves and attach playable character sheets to Owlbear Rodeo tokens.",
   "author": "metalpig - Unofficial Land of Eem Tool",
