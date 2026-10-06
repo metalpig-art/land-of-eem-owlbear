@@ -1,5 +1,4 @@
 import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import "./style.css";
 import { extractCharacter, SKILLS } from "./extract.js";
 
 const META_KEY = "com.metalpig.land-of-eem/character";
