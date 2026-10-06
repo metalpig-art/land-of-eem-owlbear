@@ -80,6 +80,7 @@ export function extractCharacter(raw) {
   const root = raw?.character ?? raw?.data ?? raw?.state ?? raw;
   const entries = walk(root);
   const skills = {};
+
   for (const skill of SKILLS) {
     const value = findValue(entries, [skill, `${skill}skill`, `${skill}value`], { fallback: "" });
     if (value !== "") skills[skill] = Number.isNaN(Number(value)) ? value : Number(value);
@@ -87,14 +88,16 @@ export function extractCharacter(raw) {
 
   const courageMax = findNumber(entries, ["couragemax", "maxcourage", "courageMaximum", "courage"], 0);
   const courageCurrentCandidate = findValue(entries, ["couragecurrent", "currentcourage", "current"], { fallback: "" });
-  const courageCurrent = courageCurrentCandidate === "" ? courageMax : findNumber(entries, ["couragecurrent", "currentcourage", "current"], courageMax);
+  const courageCurrent = courageCurrentCandidate === ""
+    ? courageMax
+    : findNumber(entries, ["couragecurrent", "currentcourage", "current"], courageMax);
 
   return {
-    name: String(findValue(entries, ["charactername", "name"], { fallback: "Unnamed adventurer" })),
-    pronouns: String(findValue(entries, ["pronouns"], { fallback: "" })),
-    className: String(findValue(entries, ["class", "classname", "characterclass"], { fallback: "" })),
-    folk: String(findValue(entries, ["folk", "race", "ancestry"], { fallback: "" })),
-    homeland: String(findValue(entries, ["homeland", "origin"], { fallback: "" })),
+    name: String(root?.name ?? "Unnamed adventurer"),
+    pronouns: String(root?.pronouns ?? ""),
+    className: String(root?.class ?? ""),
+    folk: String(root?.folk ?? ""),
+    homeland: String(root?.homeland ?? ""),
     level: findNumber(entries, ["level", "lv"], 1) || 1,
     courageCurrent,
     courageMax,
@@ -109,12 +112,12 @@ export function extractCharacter(raw) {
     inventory: cleanList(findArray(root, ["inventory", "equipment", "items", "gear"])),
     abilities: cleanList(findArray(root, ["abilities", "classabilities"])),
     perks: cleanList(findArray(root, ["perks", "folkperks", "classperks", "traits"])),
-    ideals: String(findValue(entries, ["ideal", "ideals"], { fallback: "" })),
-    flaws: String(findValue(entries, ["flaw", "flaws"], { fallback: "" })),
-    backstory: String(findValue(entries, ["backstory", "background"], { fallback: "" })),
-    personalQuest: String(findValue(entries, ["personalquest", "quest"], { fallback: "" })),
-    relationships: String(findValue(entries, ["relationships", "relationship"], { fallback: "" })),
-    notes: String(findValue(entries, ["notes", "othernotes"], { fallback: "" }))
+    ideals: String(root?.ideal ?? ""),
+    flaws: String(root?.flaw ?? ""),
+    backstory: String(root?.backstory ?? ""),
+    personalQuest: String(root?.quest ?? ""),
+    relationships: String(root?.relationships ?? ""),
+    notes: String(root?.notes ?? "")
   };
 }
 
