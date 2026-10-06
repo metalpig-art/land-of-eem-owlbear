@@ -1,5 +1,5 @@
 import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import { extractCharacter, SKILLS } from "./extract.js";
+import { extractCharacter, ATTRIBUTE_GROUPS, SKILLS } from "./extract.js";
 
 const META_KEY = "com.metalpig.land-of-eem/character";
 const app = document.querySelector("#app");
@@ -11,7 +11,9 @@ let model = emptyModel();
 function emptyModel() {
   return {
     name: "Unnamed adventurer", pronouns: "", className: "", folk: "", homeland: "", level: 1,
-    courageCurrent: 0, courageMax: 0, dread: "", attack: 0, defense: 0, questPoints: 0, xp: 0,
+    attributes: { Vim: 0, Vigor: 0, Knack: 0, Knowhow: 0 },
+    courageCurrent: 0, courageMax: 0, dread: "", attack: 0, defense: 0, questPoints: 0,
+    block: 0, inventorySlots: 20, xp: 0,
     skills: {}, proficiencies: [], deficiencies: [], inventory: [], abilities: [], perks: [],
     ideals: "", flaws: "", backstory: "", personalQuest: "", relationships: "", notes: ""
   };
@@ -25,11 +27,31 @@ function listText(v) { return Array.isArray(v) ? v.join("\n") : String(v ?? "");
 function parseList(v) { return String(v ?? "").split(/\r?\n/).map(s => s.trim()).filter(Boolean); }
 function tokenName(item) { return item?.text?.plainText || item?.name || item?.id || "Character token"; }
 function characterTokens(items) { return items.filter((item) => item.layer === "CHARACTER"); }
+function skillLabel(skill) { return skill[0].toUpperCase() + skill.slice(1); }
+
+function attributeCards() {
+  return ATTRIBUTE_GROUPS.map(group => {
+    const skills = group.skills.map(skill => `
+      <label class="skill">
+        <span>${esc(skillLabel(skill))}</span>
+        <input data-skill="${esc(skill)}" type="number" min="-3" max="3" value="${esc(model.skills?.[skill] ?? 0)}">
+      </label>`).join("");
+
+    return `
+      <section class="attribute-card">
+        <div class="attribute-head">
+          <strong>${esc(group.key.toUpperCase())}</strong>
+          <input data-attr="${esc(group.key)}" type="number" min="-3" max="3" value="${esc(model.attributes?.[group.key] ?? 0)}">
+        </div>
+        <div class="attribute-skills">${skills}</div>
+      </section>`;
+  }).join("");
+}
 
 function render(message = "") {
   const tokens = characterTokens(sceneItems);
   const tokenOptions = tokens.map(t => `<option value="${esc(t.id)}" ${t.id === selectedTokenId ? "selected" : ""}>${esc(tokenName(t))}</option>`).join("");
-  const skillInputs = SKILLS.map(s => `<label class="skill"><span>${esc(s[0].toUpperCase()+s.slice(1))}</span><input data-skill="${s}" type="number" value="${esc(model.skills?.[s] ?? 0)}"></label>`).join("");
+
   app.innerHTML = `
     <header>
       <div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>OWLBEAR CHARACTER SHEET</span></div></div>
@@ -56,15 +78,22 @@ function render(message = "") {
       </section>
 
       <section class="vitals card">
-        <div class="stat"><span>COURAGE</span><div><input data-field="courageCurrent" type="number" value="${esc(model.courageCurrent)}"><em>/</em><input data-field="courageMax" type="number" value="${esc(model.courageMax)}"></div></div>
+        <div class="stat courage"><span>COURAGE</span><div><input data-field="courageCurrent" type="number" value="${esc(model.courageCurrent)}"><em>/</em><input data-field="courageMax" type="number" value="${esc(model.courageMax)}"></div></div>
         <div class="stat"><span>DREAD</span><input data-field="dread" value="${esc(model.dread)}"></div>
         <div class="stat"><span>ATTACK</span><input data-field="attack" type="number" value="${esc(model.attack)}"></div>
         <div class="stat"><span>DEFENSE</span><input data-field="defense" type="number" value="${esc(model.defense)}"></div>
         <div class="stat"><span>QUEST PTS</span><input data-field="questPoints" type="number" value="${esc(model.questPoints)}"></div>
+        <div class="stat"><span>BLOCK</span><input data-field="block" type="number" value="${esc(model.block)}"></div>
+        <div class="stat"><span>INV. SLOTS</span><input data-field="inventorySlots" type="number" value="${esc(model.inventorySlots)}"></div>
       </section>
 
-      <details class="card" open><summary>Skills</summary><div class="skills">${skillInputs}</div></details>
+      <details class="card attributes" open>
+        <summary>Attributes & skills</summary>
+        <div class="attribute-grid">${attributeCards()}</div>
+      </details>
+
       <details class="card"><summary>Abilities & perks</summary><label>Abilities<textarea data-list="abilities">${esc(listText(model.abilities))}</textarea></label><label>Perks / traits<textarea data-list="perks">${esc(listText(model.perks))}</textarea></label></details>
+      <details class="card"><summary>Proficiencies</summary><textarea data-list="proficiencies">${esc(listText(model.proficiencies))}</textarea></details>
       <details class="card"><summary>Inventory</summary><textarea data-list="inventory">${esc(listText(model.inventory))}</textarea></details>
       <details class="card"><summary>Story & notes</summary><label>Ideals<textarea data-field="ideals">${esc(model.ideals)}</textarea></label><label>Flaws<textarea data-field="flaws">${esc(model.flaws)}</textarea></label><label>Backstory<textarea data-field="backstory">${esc(model.backstory)}</textarea></label><label>Personal quest<textarea data-field="personalQuest">${esc(model.personalQuest)}</textarea></label><label>Relationships<textarea data-field="relationships">${esc(model.relationships)}</textarea></label><label>Notes<textarea data-field="notes">${esc(model.notes)}</textarea></label></details>
 
@@ -77,6 +106,9 @@ function readForm() {
   document.querySelectorAll("[data-field]").forEach(el => {
     const key = el.dataset.field;
     model[key] = el.type === "number" ? (Number(el.value) || 0) : el.value;
+  });
+  document.querySelectorAll("[data-attr]").forEach(el => {
+    model.attributes[el.dataset.attr] = Number(el.value) || 0;
   });
   document.querySelectorAll("[data-skill]").forEach(el => model.skills[el.dataset.skill] = Number(el.value) || 0);
   document.querySelectorAll("[data-list]").forEach(el => model[el.dataset.list] = parseList(el.value));
@@ -98,6 +130,7 @@ async function loadFromToken(id) {
   if (stored && typeof stored === "object") {
     currentRaw = stored.source ?? null;
     model = { ...emptyModel(), ...(stored.sheet ?? {}) };
+    model.attributes = { ...emptyModel().attributes, ...(stored.sheet?.attributes ?? {}) };
     render("Loaded from token.");
   } else {
     currentRaw = null;
@@ -109,7 +142,7 @@ async function loadFromToken(id) {
 async function saveToToken() {
   readForm();
   if (!selectedTokenId) { render("Choose a Character-layer token first."); return; }
-  const payload = { version: 1, updatedAt: new Date().toISOString(), sheet: model, source: currentRaw };
+  const payload = { version: 2, updatedAt: new Date().toISOString(), sheet: model, source: currentRaw };
   await OBR.scene.items.updateItems([selectedTokenId], items => {
     for (const item of items) item.metadata[META_KEY] = payload;
   });
@@ -120,7 +153,7 @@ async function saveToToken() {
 function downloadJson() {
   readForm();
   const output = currentRaw && typeof currentRaw === "object" ? structuredClone(currentRaw) : { character: {} };
-  output.owlbear = { version: 1, sheet: model };
+  output.owlbear = { version: 2, sheet: model };
   const blob = new Blob([JSON.stringify(output, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -140,7 +173,11 @@ function bind() {
     try {
       currentRaw = JSON.parse(await file.text());
       model = { ...emptyModel(), ...extractCharacter(currentRaw) };
-      if (currentRaw?.owlbear?.sheet) model = { ...model, ...currentRaw.owlbear.sheet };
+      model.attributes = { ...emptyModel().attributes, ...(model.attributes ?? {}) };
+      if (currentRaw?.owlbear?.sheet) {
+        model = { ...model, ...currentRaw.owlbear.sheet };
+        model.attributes = { ...emptyModel().attributes, ...(currentRaw.owlbear.sheet.attributes ?? model.attributes) };
+      }
       render(`Imported ${file.name}. Choose a token and save.`);
     } catch {
       render("That file is not valid JSON.");
@@ -151,14 +188,17 @@ function bind() {
 function start() {
   render("Connecting to Owlbear Rodeo…");
   OBR.onReady(async () => {
-    await OBR.action.setWidth(430);
-    await OBR.action.setHeight(720);
+    await OBR.action.setWidth(480);
+    await OBR.action.setHeight(760);
     await refreshItems(false);
     OBR.scene.items.onChange(items => {
       sceneItems = items;
       const selected = sceneItems.find(i => i.id === selectedTokenId);
       const stored = selected?.metadata?.[META_KEY];
-      if (stored?.sheet) model = { ...emptyModel(), ...stored.sheet };
+      if (stored?.sheet) {
+        model = { ...emptyModel(), ...stored.sheet };
+        model.attributes = { ...emptyModel().attributes, ...(stored.sheet.attributes ?? {}) };
+      }
       render();
     });
     OBR.scene.onReadyChange(() => refreshItems(false));

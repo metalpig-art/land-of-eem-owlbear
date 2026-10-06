@@ -20,16 +20,26 @@ button, .fileBtn { border: 0; border-radius: 7px; background: #2f4937; color: #f
 button.secondary { background: #78684e; }
 .fileBtn input { display: none; }
 .hint { margin: 4px 0 0; font: 11px/1.35 Arial,sans-serif; color: #746856; text-transform: none; letter-spacing: 0; }
-.vitals { display: grid; grid-template-columns: 1.25fr repeat(4,.8fr); gap: 7px; }
+.vitals { display: grid; grid-template-columns: 1.25fr repeat(6,.8fr); gap: 6px; }
 .stat { text-align: center; }
-.stat > span { display: block; font: 800 9px Arial,sans-serif; letter-spacing: .06em; }
+.stat > span { display: block; min-height: 20px; font: 800 9px Arial,sans-serif; letter-spacing: .05em; }
 .stat input { text-align: center; font-weight: 700; padding: 7px 3px; }
 .stat div { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 3px; }
 .stat em { font-style: normal; }
 summary { cursor: pointer; font: 800 12px Arial,sans-serif; text-transform: uppercase; letter-spacing: .08em; }
 details label { margin-top: 9px; }
-.skills { margin-top: 9px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
-.skill { display: grid; grid-template-columns: 1fr 54px; align-items: center; gap: 5px; }
+.attribute-grid { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.attribute-card { overflow: hidden; border: 1px solid #b5a582; border-radius: 9px; background: rgba(255,255,255,.28); }
+.attribute-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 9px; background: #e7d9b5; border-bottom: 1px solid #b5a582; }
+.attribute-head strong { font: 900 12px Arial,sans-serif; letter-spacing: .1em; color: #2f4937; }
+.attribute-head input { width: 54px; margin: 0; padding: 6px; text-align: center; font-weight: 800; }
+.attribute-skills { padding: 7px 9px; }
+.skill { display: grid; grid-template-columns: 1fr 52px; align-items: center; gap: 6px; padding: 4px 0; margin: 0; }
+.skill span { font: 700 10px Arial,sans-serif; letter-spacing: .04em; }
 .skill input { margin: 0; text-align: center; padding: 6px; }
 .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; position: sticky; bottom: 7px; padding-top: 3px; }
-@media (max-width: 380px) { .grid3 { grid-template-columns: 1fr; } .vitals { grid-template-columns: 1fr 1fr 1fr; } }
+@media (max-width: 460px) {
+  .grid3 { grid-template-columns: 1fr; }
+  .vitals { grid-template-columns: repeat(3, 1fr); }
+  .attribute-grid { grid-template-columns: 1fr; }
+}

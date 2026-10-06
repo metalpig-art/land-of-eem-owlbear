@@ -1,65 +1,23 @@
-const SKILLS = [
-  "charm", "inspire", "mettle", "perception",
-  "athletics", "intimidate", "might", "vitality",
-  "nimbleness", "search", "sneak", "trickery",
-  "lore", "realms", "tinker", "wilderness"
+const ATTRIBUTE_GROUPS = [
+  { key: "Vim", skills: ["charm", "inspire", "mettle", "perception"] },
+  { key: "Vigor", skills: ["athletics", "intimidate", "might", "vitality"] },
+  { key: "Knack", skills: ["nimbleness", "search", "sneak", "trickery"] },
+  { key: "Knowhow", skills: ["lore", "realms", "tinker", "wilderness"] }
 ];
 
-function norm(value) {
-  return String(value ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
-}
+const SKILLS = ATTRIBUTE_GROUPS.flatMap(group => group.skills);
 
-function scalar(value) {
-  return ["string", "number", "boolean"].includes(typeof value);
-}
+const CLASS_STATS = {
+  "Bard": { courage: 12, dread: "d4" },
+  "Dungeoneer": { courage: 13, dread: "d8" },
+  "Gnome": { courage: 14, dread: "d8" },
+  "Knight-Errant": { courage: 15, dread: "d10" },
+  "Loyal Chum": { courage: 13, dread: "d6" },
+  "Rascal": { courage: 12, dread: "d6" }
+};
 
-function walk(obj, path = [], out = []) {
-  if (obj === null || obj === undefined) return out;
-  if (scalar(obj)) {
-    out.push({ path, key: path[path.length - 1] ?? "", value: obj });
-    return out;
-  }
-  if (Array.isArray(obj)) {
-    obj.forEach((v, i) => walk(v, [...path, String(i)], out));
-    return out;
-  }
-  if (typeof obj === "object") {
-    Object.entries(obj).forEach(([k, v]) => walk(v, [...path, k], out));
-  }
-  return out;
-}
-
-function findValue(entries, aliases, options = {}) {
-  const names = aliases.map(norm);
-  const matches = entries.filter((e) => names.includes(norm(e.key)));
-  if (!matches.length) return options.fallback ?? "";
-  const preferred = matches.find((e) => {
-    const p = e.path.map(norm).join("/");
-    return !/example|preview|default|option|description/.test(p);
-  }) ?? matches[0];
-  return preferred.value;
-}
-
-function findNumber(entries, aliases, fallback = 0) {
-  const raw = findValue(entries, aliases, { fallback });
-  if (typeof raw === "number" && Number.isFinite(raw)) return raw;
-  const parsed = Number(String(raw).replace(/[^0-9+.-]/g, ""));
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function findArray(obj, aliases) {
-  if (!obj || typeof obj !== "object") return [];
-  const names = aliases.map(norm);
-  const queue = [obj];
-  while (queue.length) {
-    const current = queue.shift();
-    if (!current || typeof current !== "object") continue;
-    for (const [k, v] of Object.entries(current)) {
-      if (names.includes(norm(k)) && Array.isArray(v)) return v;
-      if (v && typeof v === "object") queue.push(v);
-    }
-  }
-  return [];
+function clampSkill(value) {
+  return Math.max(-3, Math.min(3, Number(value) || 0));
 }
 
 function cleanList(items) {
@@ -76,42 +34,101 @@ function cleanList(items) {
   }).filter(Boolean);
 }
 
-export function extractCharacter(raw) {
-  const root = raw?.character ?? raw?.data ?? raw?.state ?? raw;
-  const entries = walk(root);
-  const skills = {};
+function inventoryFromBuilder(root) {
+  const items = [];
+  for (const item of root?.randomItems ?? []) items.push(item);
+  for (const item of root?.extraItems ?? []) items.push(item);
+  if (root?.specialItem) items.push(root.specialItem);
+  if (root?.gadget) items.push(root.gadget);
+  if (root?.weapon) items.push(root.weapon);
+  return cleanList(items);
+}
 
-  for (const skill of SKILLS) {
-    const value = findValue(entries, [skill, `${skill}skill`, `${skill}value`], { fallback: "" });
-    if (value !== "") skills[skill] = Number.isNaN(Number(value)) ? value : Number(value);
+function classChoiceList(root) {
+  if (!root?.classChoices || typeof root.classChoices !== "object") return [];
+  return Object.entries(root.classChoices)
+    .filter(([, value]) => value)
+    .map(([label, value]) => `${label}: ${value}`);
+}
+
+function calculateSkills(root, attributes) {
+  const skills = {};
+  const parentBySkill = {};
+
+  for (const group of ATTRIBUTE_GROUPS) {
+    for (const skill of group.skills) {
+      parentBySkill[skill] = group.key;
+      skills[skill] = Number(attributes[group.key]) || 0;
+    }
   }
 
-  const courageMax = findNumber(entries, ["couragemax", "maxcourage", "courageMaximum", "courage"], 0);
-  const courageCurrentCandidate = findValue(entries, ["couragecurrent", "currentcourage", "current"], { fallback: "" });
-  const courageCurrent = courageCurrentCandidate === ""
-    ? courageMax
-    : findNumber(entries, ["couragecurrent", "currentcourage", "current"], courageMax);
+  // Character creation step 4: tweak one skill in each attribute band.
+  // +2/+1 skills lose 1; +0/-1 skills gain 1.
+  for (const skillName of Object.values(root?.tweaks ?? {})) {
+    const skill = String(skillName ?? "").toLowerCase();
+    const parent = parentBySkill[skill];
+    if (!parent) continue;
+    const base = Number(attributes[parent]) || 0;
+    skills[skill] = clampSkill(skills[skill] + (base >= 1 ? -1 : 1));
+  }
+
+  const bonus = String(root?.bonus ?? "").toLowerCase();
+  if (bonus in skills) skills[bonus] = clampSkill(skills[bonus] + 1);
+
+  const penalty = String(root?.penalty ?? "").toLowerCase();
+  if (penalty in skills) skills[penalty] = clampSkill(skills[penalty] - 1);
+
+  return skills;
+}
+
+function deriveBlock(root) {
+  const text = cleanList(root?.perks ?? []).join(" ");
+  const match = text.match(/\+\s*(\d+)\s*Block/i);
+  return match ? Number(match[1]) : 0;
+}
+
+export function extractCharacter(raw) {
+  const root = raw?.character ?? raw?.data ?? raw?.state ?? raw ?? {};
+
+  const attributes = {
+    Vim: Number(root?.attrs?.Vim) || 0,
+    Vigor: Number(root?.attrs?.Vigor) || 0,
+    Knack: Number(root?.attrs?.Knack) || 0,
+    Knowhow: Number(root?.attrs?.Knowhow) || 0
+  };
+
+  const skills = calculateSkills(root, attributes);
+  const className = String(root?.class ?? "");
+  const classStats = CLASS_STATS[className] ?? { courage: 0, dread: "" };
+  const courageMax = classStats.courage ? classStats.courage + attributes.Vim : 0;
+  const attack = attributes.Vigor;
+  const defense = -attributes.Knack;
+  const questPoints = 3 + attributes.Knowhow;
+  const inventorySlots = 20 + (Number(skills.might) || 0) + (Number(skills.vitality) || 0);
 
   return {
     name: String(root?.name ?? "Unnamed adventurer"),
     pronouns: String(root?.pronouns ?? ""),
-    className: String(root?.class ?? ""),
+    className,
     folk: String(root?.folk ?? ""),
     homeland: String(root?.homeland ?? ""),
-    level: findNumber(entries, ["level", "lv"], 1) || 1,
-    courageCurrent,
+    level: 1,
+    attributes,
+    courageCurrent: courageMax,
     courageMax,
-    dread: String(findValue(entries, ["dreaddie", "dread", "dreadDie"], { fallback: "" })),
-    attack: findNumber(entries, ["attack", "attackbonus"], 0),
-    defense: findNumber(entries, ["defense", "defence", "defensebonus"], 0),
-    questPoints: findNumber(entries, ["questpoints", "questpts", "qp"], 0),
-    xp: findNumber(entries, ["xp", "experience"], 0),
+    dread: classStats.dread,
+    attack,
+    defense,
+    questPoints,
+    block: deriveBlock(root),
+    inventorySlots,
+    xp: 0,
     skills,
-    proficiencies: cleanList(findArray(root, ["proficiencies", "proficiency"])),
-    deficiencies: cleanList(findArray(root, ["deficiencies", "deficiency"])),
-    inventory: cleanList(findArray(root, ["inventory", "equipment", "items", "gear"])),
-    abilities: cleanList(findArray(root, ["abilities", "classabilities"])),
-    perks: cleanList(findArray(root, ["perks", "folkperks", "classperks", "traits"])),
+    proficiencies: cleanList(root?.profs ?? []),
+    deficiencies: [],
+    inventory: inventoryFromBuilder(root),
+    abilities: [],
+    perks: [...cleanList(root?.perks ?? []), ...classChoiceList(root)],
     ideals: String(root?.ideal ?? ""),
     flaws: String(root?.flaw ?? ""),
     backstory: String(root?.backstory ?? ""),
@@ -121,4 +138,4 @@ export function extractCharacter(raw) {
   };
 }
 
-export { SKILLS };
+export { ATTRIBUTE_GROUPS, SKILLS };
