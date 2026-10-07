@@ -207,14 +207,42 @@ function modeLabel(mode) {
   return mode === "advantage" ? "Advantage" : mode === "disadvantage" ? "Disadvantage" : "Normal";
 }
 
-function rollBroadcastText(result) {
-  const who = model.name || "A character";
-  const mode = modeLabel(result.mode);
-  const d12 = result.d12.rolls.length > 1 ? `${result.d12.rolls.join("/")}→${result.d12.chosen}` : String(result.d12.chosen);
+function chosenRollMath(d12) {
+  if (d12.rolls.length <= 1) return `(${d12.chosen})`;
+  return `(${d12.rolls.join(", ")} → ${d12.chosen})`;
+}
+
+function modifierTerm(value, label = "") {
+  const n = Number(value) || 0;
+  const suffix = label ? ` ${label}` : "";
+  return n < 0 ? `- ${Math.abs(n)}${suffix}` : `+ ${n}${suffix}`;
+}
+
+function rollDisplayLines(result, includeName = false) {
+  const lines = [];
+  if (includeName) lines.push(model.name || "A character");
+  const rollMath = chosenRollMath(result.d12);
   if (result.kind === "attack") {
-    return `${who} — ${mode} ${result.attackType === "ranged" ? "Ranged " : ""}Attack: d12 ${d12} ${signedNumber(result.modifier)} Attack ${signedNumber(result.defense)} Defense = ${result.total} — ${result.outcome}; ${result.appliedDread} Dread`;
+    lines.push(`Attack: ${result.total}  [${rollMath} ${modifierTerm(result.modifier)} ${modifierTerm(result.defense, "(Defense)")}]`);
+    const dreadDice = result.dread.rolls.length > 1 ? result.dread.rolls.map(v => `(${v})`).join(" + ") : `(${result.dread.rolls[0] ?? 0})`;
+    const dreadBonus = modifierTerm(result.dread.bonus);
+    lines.push(`Dread: ${result.appliedDread} Dread  [${dreadDice} ${dreadBonus}]`);
+    if (result.outcome === "Hit" || result.outcome === "Hit with a Counterattack" || result.outcome === "Critical Hit") {
+      lines.push(`${result.outcome} for ${result.appliedDread} Dread!`);
+    } else if (result.outcome === "Grazing Shot") {
+      lines.push(`Grazing Shot for 1 Dread!`);
+    } else {
+      lines.push(result.outcome);
+    }
+  } else {
+    lines.push(`${result.label}: ${result.total}  [${rollMath} ${modifierTerm(result.modifier)}]`);
+    lines.push(result.outcome);
   }
-  return `${who} — ${result.label} (${mode}): d12 ${d12} ${signedNumber(result.modifier)} = ${result.total} — ${result.outcome}`;
+  return lines;
+}
+
+function rollBroadcastText(result) {
+  return rollDisplayLines(result, true).join("\n");
 }
 
 function broadcastRollResult(result) {
@@ -227,14 +255,8 @@ function renderRollPanel() {
   const attackControls = prompt.kind === "attack" ? `<div class="attack-options"><label>Target Defense<input id="targetDefense" type="text" inputmode="numeric" value="${esc(prompt.targetDefense ?? rollResult?.defense ?? 0)}"></label><label>Attack Type<select id="attackType"><option value="melee" ${(prompt.attackType ?? rollResult?.attackType) === "melee" ? "selected" : ""}>Melee</option><option value="ranged" ${(prompt.attackType ?? rollResult?.attackType) === "ranged" ? "selected" : ""}>Ranged</option></select></label></div>` : "";
   let result = "";
   if (rollResult) {
-    const d12Text = rollResult.d12.rolls.length > 1 ? `${rollResult.d12.rolls.join(" / ")} → ${rollResult.d12.chosen}` : String(rollResult.d12.chosen);
-    if (rollResult.kind === "skill" || rollResult.kind === "attribute") {
-      result = `<div class="roll-result"><strong>${esc(rollResult.outcome)}</strong><span>d12 ${esc(d12Text)} ${signedNumber(rollResult.modifier)} = <b>${esc(rollResult.total)}</b></span></div>`;
-    } else {
-      const dreadRoll = rollResult.dread.rolls.join(" + ");
-      const bonusText = rollResult.dread.bonus ? ` ${signedNumber(rollResult.dread.bonus)}` : "";
-      result = `<div class="roll-result attack-result"><strong>${esc(rollResult.outcome)}</strong><span>Attack: d12 ${esc(d12Text)} ${signedNumber(rollResult.modifier)} ${signedNumber(rollResult.defense)} Defense = <b>${esc(rollResult.total)}</b></span><span>Dread: ${esc(dreadRoll)}${esc(bonusText)} → <b>${esc(rollResult.appliedDread)} Dread</b></span><small>${esc(rollResult.dreadNote)}</small></div>`;
-    }
+    const lines = rollDisplayLines(rollResult, false);
+    result = `<div class="roll-result ${rollResult.kind === "attack" ? "attack-result" : ""}">${lines.map((line, i) => i === lines.length - 1 ? `<strong>${esc(line)}</strong>` : `<span>${esc(line)}</span>`).join("")}</div>`;
   }
   return `<div class="roll-modal-backdrop" id="rollModalBackdrop"><section class="roll-panel roll-modal" role="dialog" aria-modal="true" aria-label="${esc(prompt.label)} roll"><div class="roll-panel-head"><strong>${esc(prompt.label)} Roll</strong><button class="roll-close" id="closeRollBtn" type="button" aria-label="Close roll panel">×</button></div>${attackControls}<div class="roll-modes"><button data-roll-mode="normal" type="button">Normal</button><button data-roll-mode="advantage" type="button">Advantage</button><button data-roll-mode="disadvantage" type="button">Disadvantage</button></div>${result}</section></div>`;
 }

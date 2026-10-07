@@ -62,3 +62,11 @@ Owlbear's custom context menu is attached to selected scene items. Depending on 
 - Roll choices open in a modal dialog.
 - Completed checks and attacks are broadcast to all connected players using Owlbear Broadcast and appear as room notifications.
 - Pop-out rolls bridge through the extension background page so they can also broadcast to the room.
+
+
+## v0.2.9
+- Vim, Vigor, Knack, Knowhow and all Skills are rollable in both the embedded Owlbear sheet and pop-out sheet.
+- Roll prompts remain modal with Normal / Advantage / Disadvantage.
+- Roll math is shown in brackets with raw die results in parentheses.
+- Roll broadcasts use REMOTE delivery so every other connected Owlbear participant, including GMs, receives the result while the roller does not.
+- Broadcast text mirrors the local roll result.

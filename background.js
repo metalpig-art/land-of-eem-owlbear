@@ -86,7 +86,7 @@ OBR.onReady(async () => {
         const ok = await saveTokenPayload(msg.tokenId, msg.payload);
         reply(event.source, event.origin, msg.requestId, "popout-save-result", { ok });
       } else if (msg.type === "popout-broadcast-roll") {
-        await OBR.broadcast.sendMessage(ROLL_CHANNEL, { type: "roll-result", text: String(msg.text ?? "") }, { destination: "ALL" });
+        await OBR.broadcast.sendMessage(ROLL_CHANNEL, { type: "roll-result", text: String(msg.text ?? "") }, { destination: "REMOTE" });
         reply(event.source, event.origin, msg.requestId, "popout-broadcast-roll-result", { ok: true });
       }
     } catch (error) {

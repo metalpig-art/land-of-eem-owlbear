@@ -34,3 +34,8 @@
 .roll-modal-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(31,27,20,.45);display:grid;place-items:center;padding:18px}
 .roll-panel.roll-modal{width:min(430px,calc(100% - 12px));max-height:calc(100% - 24px);overflow:auto;border:2px solid #cc8b21;border-radius:10px;background:#fff8ed;padding:14px;box-shadow:0 12px 40px rgba(0,0,0,.28)}
 .roll-panel-head{margin-bottom:10px}.roll-modes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.roll-modes button{padding:10px 6px}.attack-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}.roll-result{margin-top:12px;padding:10px;border:1px solid #d7b476;border-radius:6px;background:white;display:grid;gap:5px}.roll-result>strong{color:#8d5811;font-size:15px}.roll-result span,.roll-result small{font-family:Arial,sans-serif}.roll-close{min-width:36px;min-height:36px}
+
+/* v0.2.9 roll interaction hardening */
+.attribute-roll,.skill-roll,.stat-roll{pointer-events:auto;position:relative;z-index:1}
+.roll-result span,.roll-result strong{display:block;white-space:pre-wrap}
+.roll-result span{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
