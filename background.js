@@ -2,6 +2,7 @@ import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
 
 const EXT_ID = "com.metalpig.land-of-eem";
 const META_KEY = `${EXT_ID}/character`;
+const ROLL_CHANNEL = `${EXT_ID}/roll`;
 const POPUP_PREFIX = "land-of-eem-";
 
 async function getTokenPayload(tokenId) {
@@ -37,6 +38,12 @@ function reply(target, origin, requestId, type, body = {}) {
 }
 
 OBR.onReady(async () => {
+  OBR.broadcast.onMessage(ROLL_CHANNEL, async event => {
+    const data = event?.data ?? {};
+    if (data.type === "roll-result" && data.text) {
+      await OBR.notification.show(String(data.text), "INFO");
+    }
+  });
   // Keep the filter deliberately simple. Owlbear supports layer filters here;
   // metadata availability is checked after the user clicks the button.
   await OBR.contextMenu.create({
@@ -78,6 +85,9 @@ OBR.onReady(async () => {
       } else if (msg.type === "popout-save") {
         const ok = await saveTokenPayload(msg.tokenId, msg.payload);
         reply(event.source, event.origin, msg.requestId, "popout-save-result", { ok });
+      } else if (msg.type === "popout-broadcast-roll") {
+        await OBR.broadcast.sendMessage(ROLL_CHANNEL, { type: "roll-result", text: String(msg.text ?? "") }, { destination: "ALL" });
+        reply(event.source, event.origin, msg.requestId, "popout-broadcast-roll-result", { ok: true });
       }
     } catch (error) {
       reply(event.source, event.origin, msg.requestId, `${msg.type}-result`, { ok: false, error: String(error?.message ?? error) });

@@ -28,3 +28,9 @@
 .roll-modes{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.roll-modes button{background:#2f513a;padding:6px 10px}.roll-result{margin-top:8px;border-left:4px solid #2f513a;background:white;padding:7px 9px;display:grid;gap:3px}.roll-result strong{color:#2f513a}.roll-result span{font-size:12px}.roll-result small{color:#6b6257}
 .journal-page label{font-size:11px}.journal-textarea{min-height:620px;font:14px/1.5 Georgia,serif;text-transform:none;background:repeating-linear-gradient(to bottom,#fff 0,#fff 27px,#eadfce 28px)}
 @media(max-width:700px){.sheet-workspace{grid-template-columns:1fr}.sticky-attributes{position:relative;top:auto;max-height:none;border-right:0;border-bottom:2px solid #e2bb76;display:grid;grid-template-columns:1fr 1fr;gap:8px}.sticky-vitals{top:66px}.workspace-right{border-left:0}.journal-textarea{min-height:420px}}
+
+/* v0.2.8 roll dialog */
+.attribute-roll{font:900 16px Arial;color:#bf7f1b;text-transform:uppercase}
+.roll-modal-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(31,27,20,.45);display:grid;place-items:center;padding:18px}
+.roll-panel.roll-modal{width:min(430px,calc(100% - 12px));max-height:calc(100% - 24px);overflow:auto;border:2px solid #cc8b21;border-radius:10px;background:#fff8ed;padding:14px;box-shadow:0 12px 40px rgba(0,0,0,.28)}
+.roll-panel-head{margin-bottom:10px}.roll-modes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.roll-modes button{padding:10px 6px}.attack-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}.roll-result{margin-top:12px;padding:10px;border:1px solid #d7b476;border-radius:6px;background:white;display:grid;gap:5px}.roll-result>strong{color:#8d5811;font-size:15px}.roll-result span,.roll-result small{font-family:Arial,sans-serif}.roll-close{min-width:36px;min-height:36px}

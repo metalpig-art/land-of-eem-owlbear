@@ -55,3 +55,10 @@ Owlbear's custom context menu is attached to selected scene items. Depending on 
 - Adds a persistent Journal tab saved with the character.
 - Skill names are clickable 1d12 checks with Normal/Advantage/Disadvantage.
 - Attack is clickable and resolves Attack + target Defense and Dread in the same roll.
+
+
+## v0.2.8
+- Vim, Vigor, Knack and Knowhow are clickable checks.
+- Roll choices open in a modal dialog.
+- Completed checks and attacks are broadcast to all connected players using Owlbear Broadcast and appear as room notifications.
+- Pop-out rolls bridge through the extension background page so they can also broadcast to the room.

@@ -3,6 +3,7 @@ import { extractCharacter, ATTRIBUTE_GROUPS } from "./extract.js";
 import { recalculateEquipmentStats, signedNumber, isWeaponItem } from "./equipment.js";
 
 const EXT_ID = "com.metalpig.land-of-eem";
+const ROLL_CHANNEL = `${EXT_ID}/roll`;
 const META_KEY = `${EXT_ID}/character`;
 const OPEN_TOKEN_KEY = `${EXT_ID}/open-token`;
 const app = document.querySelector("#app");
@@ -67,7 +68,7 @@ function attributeCards() {
   return ATTRIBUTE_GROUPS.map(group => {
     const skills = group.skills.map(skill => `
       <label class="skill-row nested-skill"><button type="button" class="roll-link skill-roll" data-roll-skill="${esc(skill)}">${esc(skillLabel(skill))}</button><input data-skill="${esc(skill)}" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.skills?.[skill] ?? 0))}"></label>`).join("");
-    return `<section class="attribute-card"><div class="attribute-head"><strong>${esc(group.key.toUpperCase())}</strong><input data-attr="${esc(group.key)}" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.attributes?.[group.key] ?? 0))}"></div><div class="attribute-skills">${skills}</div></section>`;
+    return `<section class="attribute-card"><div class="attribute-head"><button type="button" class="roll-link attribute-roll" data-roll-attribute="${esc(group.key)}">${esc(group.key.toUpperCase())}</button><input data-attr="${esc(group.key)}" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.attributes?.[group.key] ?? 0))}"></div><div class="attribute-skills">${skills}</div></section>`;
   }).join("");
 }
 
@@ -205,6 +206,13 @@ function openSkillRoll(skill) {
   render();
 }
 
+function openAttributeRoll(attribute) {
+  readForm();
+  rollPrompt = { kind: "attribute", attribute, label: attribute, modifier: Number(model.attributes?.[attribute]) || 0 };
+  rollResult = null;
+  render();
+}
+
 function openAttackRoll() {
   readForm();
   rollPrompt = { kind: "attack", label: "Attack", modifier: Number(model.attack) || 0, attackType: inferAttackType(), targetDefense: 0 };
@@ -216,10 +224,10 @@ function performRoll(mode) {
   if (!rollPrompt) return;
   readForm();
   const d12 = rollD12(mode);
-  if (rollPrompt.kind === "skill") {
-    const modifier = Number(model.skills?.[rollPrompt.skill]) || 0;
+  if (rollPrompt.kind === "skill" || rollPrompt.kind === "attribute") {
+    const modifier = rollPrompt.kind === "skill" ? (Number(model.skills?.[rollPrompt.skill]) || 0) : (Number(model.attributes?.[rollPrompt.attribute]) || 0);
     const total = d12.chosen + modifier;
-    rollResult = { kind: "skill", label: rollPrompt.label, mode, d12, modifier, total, outcome: checkOutcome(total) };
+    rollResult = { kind: rollPrompt.kind, label: rollPrompt.label, mode, d12, modifier, total, outcome: checkOutcome(total) };
   } else {
     const defense = Number(document.querySelector("#targetDefense")?.value) || 0;
     const attackType = document.querySelector("#attackType")?.value || rollPrompt.attackType || "melee";
@@ -243,11 +251,30 @@ function performRoll(mode) {
     }
     rollResult = { kind: "attack", label: "Attack", mode, d12, modifier: attack, defense, total, attackType, outcome, dread, appliedDread, dreadNote };
   }
+  broadcastRollResult(rollResult);
   render();
 }
 
 function modeLabel(mode) {
   return mode === "advantage" ? "Advantage" : mode === "disadvantage" ? "Disadvantage" : "Normal";
+}
+
+function rollBroadcastText(result) {
+  const who = model.name || "A character";
+  const mode = modeLabel(result.mode);
+  const d12 = result.d12.rolls.length > 1 ? `${result.d12.rolls.join("/")}→${result.d12.chosen}` : String(result.d12.chosen);
+  if (result.kind === "attack") {
+    return `${who} — ${mode} ${result.attackType === "ranged" ? "Ranged " : ""}Attack: d12 ${d12} ${signedNumber(result.modifier)} Attack ${signedNumber(result.defense)} Defense = ${result.total} — ${result.outcome}; ${result.appliedDread} Dread`;
+  }
+  return `${who} — ${result.label} (${mode}): d12 ${d12} ${signedNumber(result.modifier)} = ${result.total} — ${result.outcome}`;
+}
+
+async function broadcastRollResult(result) {
+  try {
+    await OBR.broadcast.sendMessage(ROLL_CHANNEL, { type: "roll-result", text: rollBroadcastText(result) }, { destination: "ALL" });
+  } catch (error) {
+    console.warn("Could not broadcast Land of Eem roll", error);
+  }
 }
 
 function renderRollPanel() {
@@ -257,7 +284,7 @@ function renderRollPanel() {
   let result = "";
   if (rollResult) {
     const d12Text = rollResult.d12.rolls.length > 1 ? `${rollResult.d12.rolls.join(" / ")} → ${rollResult.d12.chosen}` : String(rollResult.d12.chosen);
-    if (rollResult.kind === "skill") {
+    if (rollResult.kind === "skill" || rollResult.kind === "attribute") {
       result = `<div class="roll-result"><strong>${esc(rollResult.outcome)}</strong><span>d12 ${esc(d12Text)} ${signedNumber(rollResult.modifier)} = <b>${esc(rollResult.total)}</b></span></div>`;
     } else {
       const dreadRoll = rollResult.dread.rolls.join(" + ");
@@ -265,7 +292,7 @@ function renderRollPanel() {
       result = `<div class="roll-result attack-result"><strong>${esc(rollResult.outcome)}</strong><span>Attack: d12 ${esc(d12Text)} ${signedNumber(rollResult.modifier)} ${signedNumber(rollResult.defense)} Defense = <b>${esc(rollResult.total)}</b></span><span>Dread: ${esc(dreadRoll)}${esc(bonusText)} → <b>${esc(rollResult.appliedDread)} Dread</b></span><small>${esc(rollResult.dreadNote)}</small></div>`;
     }
   }
-  return `<section class="roll-panel"><div class="roll-panel-head"><strong>${esc(prompt.label)} Roll</strong><button class="roll-close" id="closeRollBtn" type="button" aria-label="Close roll panel">×</button></div>${attackControls}<div class="roll-modes"><button data-roll-mode="normal" type="button">Normal</button><button data-roll-mode="advantage" type="button">Advantage</button><button data-roll-mode="disadvantage" type="button">Disadvantage</button></div>${result}</section>`;
+  return `<div class="roll-modal-backdrop" id="rollModalBackdrop"><section class="roll-panel roll-modal" role="dialog" aria-modal="true" aria-label="${esc(prompt.label)} roll"><div class="roll-panel-head"><strong>${esc(prompt.label)} Roll</strong><button class="roll-close" id="closeRollBtn" type="button" aria-label="Close roll panel">×</button></div>${attackControls}<div class="roll-modes"><button data-roll-mode="normal" type="button">Normal</button><button data-roll-mode="advantage" type="button">Advantage</button><button data-roll-mode="disadvantage" type="button">Disadvantage</button></div>${result}</section></div>`;
 }
 
 function render(message = "") {
@@ -393,9 +420,11 @@ function updateEquipmentStats(message = "Equipment stats updated.") {
 
 function bind() {
   document.querySelectorAll("[data-roll-skill]").forEach(btn => btn.addEventListener("click", () => openSkillRoll(btn.dataset.rollSkill)));
+  document.querySelectorAll("[data-roll-attribute]").forEach(btn => btn.addEventListener("click", () => openAttributeRoll(btn.dataset.rollAttribute)));
   document.querySelector("#attackRollBtn")?.addEventListener("click", openAttackRoll);
   document.querySelectorAll("[data-roll-mode]").forEach(btn => btn.addEventListener("click", () => performRoll(btn.dataset.rollMode)));
   document.querySelector("#closeRollBtn")?.addEventListener("click", () => { rollPrompt = null; rollResult = null; render(); });
+  document.querySelector("#rollModalBackdrop")?.addEventListener("click", e => { if (e.target.id === "rollModalBackdrop") { rollPrompt = null; rollResult = null; render(); } });
   document.querySelectorAll("[data-inventory-worn],[data-mag-worn]").forEach(el => el.addEventListener("change", () => updateEquipmentStats()));
   document.querySelectorAll("[data-mag-trait-name],[data-mag-trait-text],[data-mag-type],[data-mag-cost]").forEach(el => el.addEventListener("change", () => updateEquipmentStats()));
   document.querySelector("#refreshBtn")?.addEventListener("click", () => refreshItems());
