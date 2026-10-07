@@ -10,6 +10,8 @@ let sceneItems = [];
 let selectedTokenId = "";
 let currentRaw = null;
 let activeTab = "attributes";
+let rollPrompt = null;
+let rollResult = null;
 let model = emptyModel();
 
 function emptyModel() {
@@ -19,7 +21,7 @@ function emptyModel() {
     courageCurrent: 0, courageMax: 0, dread: "", attack: 0, defense: 0, questPoints: 0,
     block: 0, inventorySlots: 20, xp: 0,
     skills: {}, proficiencies: [], deficiencies: [], inventory: [], magnificentItems: [], racialTraits: [], classPerks: [], abilities: [],
-    ideals: "", flaws: "", backstory: "", personalQuest: "", relationships: "", ally: "", rival: "", secondRival: "", notes: ""
+    ideals: "", flaws: "", backstory: "", personalQuest: "", relationships: "", ally: "", rival: "", secondRival: "", notes: "", journal: ""
   };
 }
 
@@ -64,7 +66,7 @@ function displayedClassPerks() {
 function attributeCards() {
   return ATTRIBUTE_GROUPS.map(group => {
     const skills = group.skills.map(skill => `
-      <label class="skill-row nested-skill"><span>${esc(skillLabel(skill))}</span><input data-skill="${esc(skill)}" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.skills?.[skill] ?? 0))}"></label>`).join("");
+      <label class="skill-row nested-skill"><button type="button" class="roll-link skill-roll" data-roll-skill="${esc(skill)}">${esc(skillLabel(skill))}</button><input data-skill="${esc(skill)}" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.skills?.[skill] ?? 0))}"></label>`).join("");
     return `<section class="attribute-card"><div class="attribute-head"><strong>${esc(group.key.toUpperCase())}</strong><input data-attr="${esc(group.key)}" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.attributes?.[group.key] ?? 0))}"></div><div class="attribute-skills">${skills}</div></section>`;
   }).join("");
 }
@@ -113,28 +115,157 @@ function renderTab() {
       </div>
     </section>`;
   }
+  if (activeTab === "journal") {
+    return `<section class="tab-page journal-page"><label>Journal<textarea class="journal-textarea" data-field="journal" placeholder="Session notes, clues, NPCs, plans, treasure, promises…">${esc(model.journal)}</textarea></label></section>`;
+  }
   return `<section class="tab-page attributes-page">
-    <div class="main-layout">
-      <aside class="attribute-column">${attributeCards()}</aside>
-      <section class="main-content">
-        <section class="vitals card compact-vitals">
-          <div class="stat courage"><span>COURAGE</span><div><input data-field="courageCurrent" type="number" value="${esc(model.courageCurrent)}"><em>/</em><input data-field="courageMax" type="number" value="${esc(model.courageMax)}"></div></div>
-          <div class="stat"><span>DREAD</span><input data-field="dread" value="${esc(model.dread)}"></div>
-          <div class="stat"><span>ATTACK</span><input data-field="attack" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.attack))}"></div>
-          <div class="stat"><span>DEFENSE</span><input data-field="defense" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.defense))}"></div>
-          <div class="stat"><span>QUEST PTS</span><input data-field="questPoints" type="number" value="${esc(model.questPoints)}"></div>
-          <div class="stat"><span>BLOCK †</span><input data-field="block" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.block))}"></div>
-        </section>
-        <div class="two-col-features">
-          ${featureList("Proficiencies", model.proficiencies, "proficiencies", "No proficiencies")}
-          ${featureList("Deficiencies", model.deficiencies, "deficiencies", "No deficiencies")}
-        </div>
-        ${featureList("Racial Traits", model.racialTraits, "racialTraits", "No racial traits")}
-        ${featureList("Class Perks", displayedClassPerks(), "classPerks", "No class perks")}
-        ${featureList("Abilities", model.abilities, "abilities", "No abilities")}
-      </section>
+    <div class="two-col-features">
+      ${featureList("Proficiencies", model.proficiencies, "proficiencies", "No proficiencies")}
+      ${featureList("Deficiencies", model.deficiencies, "deficiencies", "No deficiencies")}
     </div>
+    ${featureList("Racial Traits", model.racialTraits, "racialTraits", "No racial traits")}
+    ${featureList("Class Perks", displayedClassPerks(), "classPerks", "No class perks")}
+    ${featureList("Abilities", model.abilities, "abilities", "No abilities")}
   </section>`;
+}
+
+function renderWorkspace() {
+  return `<section class="sheet-workspace">
+    <aside class="attribute-column sticky-attributes">${attributeCards()}</aside>
+    <section class="workspace-right">
+      <section class="vitals card compact-vitals sticky-vitals">
+        <div class="stat courage"><span>COURAGE</span><div><input data-field="courageCurrent" type="number" value="${esc(model.courageCurrent)}"><em>/</em><input data-field="courageMax" type="number" value="${esc(model.courageMax)}"></div></div>
+        <div class="stat"><span>DREAD</span><input data-field="dread" value="${esc(model.dread)}"></div>
+        <div class="stat"><button type="button" class="roll-link stat-roll" id="attackRollBtn">ATTACK</button><input data-field="attack" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.attack))}"></div>
+        <div class="stat"><span>DEFENSE</span><input data-field="defense" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.defense))}"></div>
+        <div class="stat"><span>QUEST PTS</span><input data-field="questPoints" type="number" value="${esc(model.questPoints)}"></div>
+        <div class="stat"><span>BLOCK †</span><input data-field="block" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.block))}"></div>
+      </section>
+      ${renderRollPanel()}
+      <nav class="tabs workspace-tabs"><button data-tab="attributes" class="${activeTab === "attributes" ? "active" : ""}">Attributes</button><button data-tab="inventory" class="${activeTab === "inventory" ? "active" : ""}">Inventory</button><button data-tab="background" class="${activeTab === "background" ? "active" : ""}">Background</button><button data-tab="journal" class="${activeTab === "journal" ? "active" : ""}">Journal</button></nav>
+      <div class="dynamic-panel">${renderTab()}</div>
+    </section>
+  </section>`;
+}
+
+
+function rollDie(sides) {
+  const n = Math.max(2, Number(sides) || 12);
+  return Math.floor(Math.random() * n) + 1;
+}
+
+function rollD12(mode = "normal") {
+  const first = rollDie(12);
+  if (mode === "normal") return { rolls: [first], chosen: first };
+  const second = rollDie(12);
+  return { rolls: [first, second], chosen: mode === "advantage" ? Math.max(first, second) : Math.min(first, second) };
+}
+
+function parseDread(value) {
+  const text = String(value ?? "").replace(/\s+/g, "");
+  const dice = text.match(/(?:(\d+))?d(\d+)/i);
+  const count = dice ? Math.max(1, Number(dice[1] || 1)) : 1;
+  const sides = dice ? Math.max(2, Number(dice[2] || 6)) : 6;
+  const rest = dice ? text.replace(dice[0], "") : text;
+  const bonus = [...rest.matchAll(/([+-]\d+)/g)].reduce((sum, m) => sum + (Number(m[1]) || 0), 0);
+  return { count, sides, bonus };
+}
+
+function rollDreadValue() {
+  const parsed = parseDread(model.dread);
+  const rolls = Array.from({ length: parsed.count }, () => rollDie(parsed.sides));
+  return { ...parsed, rolls, diceTotal: rolls.reduce((a, b) => a + b, 0) };
+}
+
+function checkOutcome(total) {
+  if (total <= 2) return "Complete Failure";
+  if (total <= 5) return "Failure with a Plus";
+  if (total <= 8) return "Success with a Twist";
+  if (total <= 11) return "Success";
+  return "Complete Success";
+}
+
+function attackOutcome(total, attackType = "melee") {
+  if (total <= 2) return "Critical Miss";
+  if (total <= 5) return "Miss with a Plus";
+  if (total <= 8) return attackType === "ranged" ? "Grazing Shot" : "Hit with a Counterattack";
+  if (total <= 11) return "Hit";
+  return "Critical Hit";
+}
+
+function inferAttackType() {
+  const equipped = [...(model.inventory ?? []), ...(model.magnificentItems ?? [])].find(item => item?.worn && isWeaponItem(item));
+  return /ranged/i.test(String(equipped?.type ?? "")) ? "ranged" : "melee";
+}
+
+function openSkillRoll(skill) {
+  readForm();
+  rollPrompt = { kind: "skill", skill, label: skillLabel(skill), modifier: Number(model.skills?.[skill]) || 0 };
+  rollResult = null;
+  render();
+}
+
+function openAttackRoll() {
+  readForm();
+  rollPrompt = { kind: "attack", label: "Attack", modifier: Number(model.attack) || 0, attackType: inferAttackType(), targetDefense: 0 };
+  rollResult = null;
+  render();
+}
+
+function performRoll(mode) {
+  if (!rollPrompt) return;
+  readForm();
+  const d12 = rollD12(mode);
+  if (rollPrompt.kind === "skill") {
+    const modifier = Number(model.skills?.[rollPrompt.skill]) || 0;
+    const total = d12.chosen + modifier;
+    rollResult = { kind: "skill", label: rollPrompt.label, mode, d12, modifier, total, outcome: checkOutcome(total) };
+  } else {
+    const defense = Number(document.querySelector("#targetDefense")?.value) || 0;
+    const attackType = document.querySelector("#attackType")?.value || rollPrompt.attackType || "melee";
+    rollPrompt.targetDefense = defense;
+    rollPrompt.attackType = attackType;
+    const attack = Number(model.attack) || 0;
+    const total = d12.chosen + attack + defense;
+    const outcome = attackOutcome(total, attackType);
+    const dread = rollDreadValue();
+    let appliedDread = 0;
+    let dreadNote = "Dread rolled, but no Dread is applied on this result.";
+    if (outcome === "Grazing Shot") {
+      appliedDread = 1;
+      dreadNote = "Grazing Shot inflicts 1 Dread.";
+    } else if (outcome === "Hit" || outcome === "Hit with a Counterattack") {
+      appliedDread = dread.diceTotal + dread.bonus;
+      dreadNote = "Hit inflicts the rolled Dread.";
+    } else if (outcome === "Critical Hit") {
+      appliedDread = dread.diceTotal * 2 + dread.bonus;
+      dreadNote = "Critical Hit doubles the Dread dice before adding flat Dread bonuses.";
+    }
+    rollResult = { kind: "attack", label: "Attack", mode, d12, modifier: attack, defense, total, attackType, outcome, dread, appliedDread, dreadNote };
+  }
+  render();
+}
+
+function modeLabel(mode) {
+  return mode === "advantage" ? "Advantage" : mode === "disadvantage" ? "Disadvantage" : "Normal";
+}
+
+function renderRollPanel() {
+  if (!rollPrompt && !rollResult) return "";
+  const prompt = rollPrompt ?? rollResult;
+  const attackControls = prompt.kind === "attack" ? `<div class="attack-options"><label>Target Defense<input id="targetDefense" type="text" inputmode="numeric" value="${esc(prompt.targetDefense ?? rollResult?.defense ?? 0)}"></label><label>Attack Type<select id="attackType"><option value="melee" ${(prompt.attackType ?? rollResult?.attackType) === "melee" ? "selected" : ""}>Melee</option><option value="ranged" ${(prompt.attackType ?? rollResult?.attackType) === "ranged" ? "selected" : ""}>Ranged</option></select></label></div>` : "";
+  let result = "";
+  if (rollResult) {
+    const d12Text = rollResult.d12.rolls.length > 1 ? `${rollResult.d12.rolls.join(" / ")} → ${rollResult.d12.chosen}` : String(rollResult.d12.chosen);
+    if (rollResult.kind === "skill") {
+      result = `<div class="roll-result"><strong>${esc(rollResult.outcome)}</strong><span>d12 ${esc(d12Text)} ${signedNumber(rollResult.modifier)} = <b>${esc(rollResult.total)}</b></span></div>`;
+    } else {
+      const dreadRoll = rollResult.dread.rolls.join(" + ");
+      const bonusText = rollResult.dread.bonus ? ` ${signedNumber(rollResult.dread.bonus)}` : "";
+      result = `<div class="roll-result attack-result"><strong>${esc(rollResult.outcome)}</strong><span>Attack: d12 ${esc(d12Text)} ${signedNumber(rollResult.modifier)} ${signedNumber(rollResult.defense)} Defense = <b>${esc(rollResult.total)}</b></span><span>Dread: ${esc(dreadRoll)}${esc(bonusText)} → <b>${esc(rollResult.appliedDread)} Dread</b></span><small>${esc(rollResult.dreadNote)}</small></div>`;
+    }
+  }
+  return `<section class="roll-panel"><div class="roll-panel-head"><strong>${esc(prompt.label)} Roll</strong><button class="roll-close" id="closeRollBtn" type="button" aria-label="Close roll panel">×</button></div>${attackControls}<div class="roll-modes"><button data-roll-mode="normal" type="button">Normal</button><button data-roll-mode="advantage" type="button">Advantage</button><button data-roll-mode="disadvantage" type="button">Disadvantage</button></div>${result}</section>`;
 }
 
 function render(message = "") {
@@ -153,8 +284,7 @@ function render(message = "") {
       <div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div>
       <div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div>
     </section>
-    <nav class="tabs"><button data-tab="attributes" class="${activeTab === "attributes" ? "active" : ""}">Attributes</button><button data-tab="inventory" class="${activeTab === "inventory" ? "active" : ""}">Inventory</button><button data-tab="background" class="${activeTab === "background" ? "active" : ""}">Background</button></nav>
-    ${renderTab()}
+    ${renderWorkspace()}
     <div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div>
   </main>`;
   bind();
@@ -208,7 +338,7 @@ async function loadFromToken(id) {
 async function saveToToken() {
   readForm();
   if (!selectedTokenId) { render("Choose a Character-layer token first."); return; }
-  const payload = { version: 7, updatedAt: new Date().toISOString(), sheet: model, source: currentRaw };
+  const payload = { version: 8, updatedAt: new Date().toISOString(), sheet: model, source: currentRaw };
   await OBR.scene.items.updateItems([selectedTokenId], items => { for (const item of items) item.metadata[META_KEY] = payload; });
   await OBR.notification.show(`Saved ${model.name || "character"} to token`);
   render("Saved to Owlbear token.");
@@ -217,7 +347,7 @@ async function saveToToken() {
 function downloadJson() {
   readForm();
   const output = currentRaw && typeof currentRaw === "object" ? structuredClone(currentRaw) : { character: {} };
-  output.owlbear = { version: 7, sheet: model };
+  output.owlbear = { version: 8, sheet: model };
   const blob = new Blob([JSON.stringify(output, null, 2)], { type: "application/json" });
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${(model.name || "Land-of-Eem-character").replace(/[^a-z0-9_-]+/gi, "-")}.eem.json`; a.click(); URL.revokeObjectURL(a.href);
 }
@@ -262,6 +392,10 @@ function updateEquipmentStats(message = "Equipment stats updated.") {
 }
 
 function bind() {
+  document.querySelectorAll("[data-roll-skill]").forEach(btn => btn.addEventListener("click", () => openSkillRoll(btn.dataset.rollSkill)));
+  document.querySelector("#attackRollBtn")?.addEventListener("click", openAttackRoll);
+  document.querySelectorAll("[data-roll-mode]").forEach(btn => btn.addEventListener("click", () => performRoll(btn.dataset.rollMode)));
+  document.querySelector("#closeRollBtn")?.addEventListener("click", () => { rollPrompt = null; rollResult = null; render(); });
   document.querySelectorAll("[data-inventory-worn],[data-mag-worn]").forEach(el => el.addEventListener("change", () => updateEquipmentStats()));
   document.querySelectorAll("[data-mag-trait-name],[data-mag-trait-text],[data-mag-type],[data-mag-cost]").forEach(el => el.addEventListener("change", () => updateEquipmentStats()));
   document.querySelector("#refreshBtn")?.addEventListener("click", () => refreshItems());

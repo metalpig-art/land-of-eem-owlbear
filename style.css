@@ -9,3 +9,22 @@
 
 /* v0.2.6 modifier hierarchy and equipment markers */
 .nested-skill{padding-left:18px;position:relative}.nested-skill:before{content:"";position:absolute;left:5px;top:50%;width:7px;border-top:1px solid #d5b071}.item-marker{font:900 18px/1 Georgia,serif;color:#a96813;flex:0 0 auto}.stat>span{white-space:nowrap}.inventory-summary:after{content:"* weapon   † Block includes equipped armor/item modifiers";margin-left:auto;font-size:9px;opacity:.9}.attribute-head input,.skill-row input,.stat input{font-variant-numeric:tabular-nums}
+
+
+/* v0.2.7 persistent play layout */
+.sheet-workspace{display:grid;grid-template-columns:230px minmax(0,1fr);align-items:start;background:#fffaf2;border:2px solid #cc8b21;border-top:0;min-height:600px}
+.workspace-right{min-width:0;background:#fffaf2}
+.sticky-attributes{position:sticky;top:66px;z-index:8;align-self:start;max-height:calc(100vh - 78px);overflow:auto;background:#fffaf2;border-right:2px solid #e2bb76;padding:8px 12px}
+.sticky-vitals{position:sticky;top:66px;z-index:9;background:#fffaf2;border-bottom:2px solid #cc8b21;padding:8px 10px;margin:0}
+.workspace-tabs{margin:0;border-bottom:1px solid #c98723}
+.dynamic-panel{min-width:0}
+.dynamic-panel .tab-page{border:0;padding:10px 12px;min-height:520px}
+.roll-link{appearance:none;border:0;background:transparent;color:inherit;padding:0;margin:0;border-radius:3px;font:inherit;font-weight:inherit;text-align:left;cursor:pointer;white-space:normal}
+.roll-link:hover{text-decoration:underline;color:#1f5a38;background:transparent}.roll-link:focus-visible{outline:2px solid #2f513a;outline-offset:2px}
+.skill-roll{font-size:12px}.stat-roll{display:block;width:100%;text-align:center;font-size:9px;font-weight:900;color:#bd7c19;letter-spacing:.05em}
+.roll-panel{border-bottom:2px solid #cc8b21;background:#fff4dc;padding:8px 10px}
+.roll-panel-head{display:flex;align-items:center;justify-content:space-between;color:#8d5811}.roll-panel-head strong{text-transform:uppercase;font-size:12px;letter-spacing:.05em}.roll-close{background:transparent;color:#8d5811;font-size:20px;line-height:1;padding:0 5px}
+.attack-options{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0}.attack-options input,.attack-options select{margin-top:2px}
+.roll-modes{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.roll-modes button{background:#2f513a;padding:6px 10px}.roll-result{margin-top:8px;border-left:4px solid #2f513a;background:white;padding:7px 9px;display:grid;gap:3px}.roll-result strong{color:#2f513a}.roll-result span{font-size:12px}.roll-result small{color:#6b6257}
+.journal-page label{font-size:11px}.journal-textarea{min-height:620px;font:14px/1.5 Georgia,serif;text-transform:none;background:repeating-linear-gradient(to bottom,#fff 0,#fff 27px,#eadfce 28px)}
+@media(max-width:700px){.sheet-workspace{grid-template-columns:1fr}.sticky-attributes{position:relative;top:auto;max-height:none;border-right:0;border-bottom:2px solid #e2bb76;display:grid;grid-template-columns:1fr 1fr;gap:8px}.sticky-vitals{top:66px}.workspace-right{border-left:0}.journal-textarea{min-height:420px}}

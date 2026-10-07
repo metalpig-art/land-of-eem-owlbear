@@ -38,7 +38,7 @@ Owlbear's custom context menu is attached to selected scene items. Depending on 
 - Whole-item deletion asks for confirmation; trait removal is immediate.
 - Restored the extension toolbar icon to a transparent SVG `E` and updated the manifest to use `icon.svg`.
 
-## v0.2.6
+## v0.2.7
 
 - Positive modifiers display with a leading `+`; negative modifiers keep `-`.
 - Skills are visually inset beneath their parent Attribute.
@@ -47,3 +47,11 @@ Owlbear's custom context menu is attached to selected scene items. Depending on 
 - Medium/Heavy armor apply their normal Block when the item data does not already specify Block.
 - Item and Magnificent trait text can modify Attack, Defense, Block, Dread, maximum Courage, Inventory Slots, and named Skills.
 - Knight-Errant Second Skin recalculates when armor is equipped or removed.
+
+
+## v0.2.7
+- Keeps Attributes/Skills and the combat stat row visible while the right-side tab content changes.
+- Moves Attributes, Inventory, Background, and Journal tabs into the changing content area.
+- Adds a persistent Journal tab saved with the character.
+- Skill names are clickable 1d12 checks with Normal/Advantage/Disadvantage.
+- Attack is clickable and resolves Attack + target Defense and Dread in the same roll.
