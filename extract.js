@@ -1,3 +1,4 @@
+import { recalculateEquipmentStats } from "./equipment.js";
 const ATTRIBUTE_GROUPS = [
   { key: "Vim", skills: ["charm", "inspire", "mettle", "perception"] },
   { key: "Vigor", skills: ["athletics", "intimidate", "might", "vitality"] },
@@ -210,6 +211,7 @@ function equipmentItem(item, source = "Extra") {
     worn: Boolean(item?.worn),
     type: String(item?.type ?? ""),
     cost: String(item?.cost ?? ""),
+    properties: String(item?.properties ?? item?.property ?? item?.effect ?? item?.description ?? item?.text ?? ""),
     source
   };
 }
@@ -309,28 +311,17 @@ export function extractCharacter(raw) {
   const itemCollections = inventoryFromBuilder(root);
   let courageMax = classStats.courage ? classStats.courage + attributes.Vim : 0;
   let dread = classStats.dread;
-  let attack = attributes.Vigor;
-  let defense = -attributes.Knack;
-  let questPoints = 3 + attributes.Knowhow;
-  let block = deriveBlock(root);
+  const attack = attributes.Vigor;
+  const defense = -attributes.Knack;
+  const questPoints = 3 + attributes.Knowhow;
+  const block = deriveBlock(root);
   if (className === "Knight-Errant" && hasMastered(root, "Martial Prowess")) {
     dread = "d12";
     courageMax += Number(root?.martialCourage) || 0;
   }
-  if (className === "Knight-Errant" && hasMastered(root, "Second Skin") && hasWornArmor(itemCollections)) {
-    defense -= 1;
-    block += 1;
-  }
-  for (const item of itemCollections.magnificentItems ?? []) {
-    if (!item?.worn) continue;
-    for (const trait of item?.traits ?? []) {
-      const blockMatch = String(trait?.text ?? "").match(/\+(\d+)\s*Block/i);
-      if (blockMatch) block += Number(blockMatch[1]) || 0;
-    }
-  }
   const inventorySlots = 20 + (Number(skills.might) || 0) + (Number(skills.vitality) || 0);
 
-  return {
+  const model = {
     name: String(root?.name ?? "Unnamed adventurer"),
     pronouns: String(root?.pronouns ?? ""),
     className,
@@ -363,8 +354,11 @@ export function extractCharacter(raw) {
     ally: String(root?.ally ?? ""),
     rival: String(root?.rival ?? ""),
     secondRival: String(root?.secondRival ?? ""),
-    notes: String(root?.notes ?? "")
+    notes: String(root?.notes ?? ""),
+    equipmentBase: { courageMax, dread, attack, defense, block, inventorySlots, skills: { ...skills } },
+    equipmentRules: { secondSkin: className === "Knight-Errant" && hasMastered(root, "Second Skin") }
   };
+  return recalculateEquipmentStats(model, { initial: true });
 }
 
 export { ATTRIBUTE_GROUPS, SKILLS };

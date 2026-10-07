@@ -1,5 +1,6 @@
 import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
 import { extractCharacter, ATTRIBUTE_GROUPS } from "./extract.js";
+import { recalculateEquipmentStats, signedNumber, isWeaponItem } from "./equipment.js";
 
 const EXT_ID = "com.metalpig.land-of-eem";
 const META_KEY = `${EXT_ID}/character`;
@@ -28,7 +29,6 @@ function parseList(v) { return String(v ?? "").split(/\r?\n/).map(s => s.trim())
 function tokenName(item) { return item?.text?.plainText || item?.name || item?.id || "Character token"; }
 function characterTokens(items) { return items.filter(item => item.layer === "CHARACTER"); }
 function skillLabel(skill) { return skill[0].toUpperCase() + skill.slice(1); }
-function signed(v) { const n = Number(v)||0; return n > 0 ? `+${n}` : String(n); }
 
 function normalizeModelSheet(sheet = {}) {
   const base = emptyModel();
@@ -45,6 +45,8 @@ function normalizeModelSheet(sheet = {}) {
   }
   next.inventory = keep;
   next.magnificentItems = next.magnificentItems.map(item => ({ ...item, magnificent: true, traits: Array.isArray(item.traits) ? item.traits : [], classGranted: Boolean(item.classGranted) }));
+  next.equipmentBase = sheet.equipmentBase ? { ...sheet.equipmentBase, skills: { ...(sheet.equipmentBase.skills ?? sheet.skills ?? {}) } } : null;
+  next.equipmentRules = { ...(sheet.equipmentRules ?? {}) };
   return next;
 }
 
@@ -62,8 +64,8 @@ function displayedClassPerks() {
 function attributeCards() {
   return ATTRIBUTE_GROUPS.map(group => {
     const skills = group.skills.map(skill => `
-      <label class="skill-row"><span>${esc(skillLabel(skill))}</span><input data-skill="${esc(skill)}" type="number" min="-3" max="3" value="${esc(model.skills?.[skill] ?? 0)}"></label>`).join("");
-    return `<section class="attribute-card"><div class="attribute-head"><strong>${esc(group.key.toUpperCase())}</strong><input data-attr="${esc(group.key)}" type="number" min="-3" max="3" value="${esc(model.attributes?.[group.key] ?? 0)}"></div><div class="attribute-skills">${skills}</div></section>`;
+      <label class="skill-row nested-skill"><span>${esc(skillLabel(skill))}</span><input data-skill="${esc(skill)}" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.skills?.[skill] ?? 0))}"></label>`).join("");
+    return `<section class="attribute-card"><div class="attribute-head"><strong>${esc(group.key.toUpperCase())}</strong><input data-attr="${esc(group.key)}" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.attributes?.[group.key] ?? 0))}"></div><div class="attribute-skills">${skills}</div></section>`;
   }).join("");
 }
 
@@ -79,11 +81,11 @@ function trashIcon() {
 function inventoryRows() {
   const normalRows = (model.inventory ?? []).map((item, i) => {
     const obj = typeof item === "string" ? { name:item, slots:0, worn:false, source:"" } : item;
-    return `<tr><td><input class="wear-check" data-inventory-worn="${i}" type="checkbox" ${obj.worn ? "checked" : ""}></td><td><div class="item-name-row"><input class="inventory-name" data-inventory-name="${i}" value="${esc(obj.name)}"><button class="trashBtn" data-delete-inventory="${i}" type="button" title="Delete item" aria-label="Delete ${esc(obj.name || "item")}">${trashIcon()}</button></div></td><td><input class="inventory-slots" data-inventory-slots="${i}" type="number" min="0" value="${esc(obj.slots ?? 0)}"></td><td class="source">${esc(obj.source ?? "")}</td></tr>`;
+    return `<tr><td><input class="wear-check" data-inventory-worn="${i}" type="checkbox" ${obj.worn ? "checked" : ""}></td><td><div class="item-name-row"><input class="inventory-name" data-inventory-name="${i}" value="${esc(obj.name)}">${isWeaponItem(obj) ? '<span class="item-marker" title="Weapon">*</span>' : ''}<button class="trashBtn" data-delete-inventory="${i}" type="button" title="Delete item" aria-label="Delete ${esc(obj.name || "item")}">${trashIcon()}</button></div></td><td><input class="inventory-slots" data-inventory-slots="${i}" type="number" min="0" value="${esc(obj.slots ?? 0)}"></td><td class="source">${esc(obj.source ?? "")}</td></tr>`;
   }).join("");
   const magnificentRows = (model.magnificentItems ?? []).map((item, i) => {
     const traits = (item.traits ?? []).map((trait, j) => `<div class="trait-edit"><input data-mag-trait-name="${i}:${j}" value="${esc(trait.name ?? "")}" placeholder="[trait]"><input data-mag-trait-text="${i}:${j}" value="${esc(trait.text ?? "")}" placeholder="Trait description"><button class="trashBtn traitTrashBtn" data-delete-trait="${i}:${j}" type="button" title="Remove trait" aria-label="Remove trait ${esc(trait.name || "trait")}">${trashIcon()}</button></div>`).join("");
-    return `<tr class="magnificent-row"><td><input class="wear-check" data-mag-worn="${i}" type="checkbox" ${item.worn ? "checked" : ""}></td><td><div class="item-name-row"><input class="inventory-name" data-mag-name="${i}" value="${esc(item.name ?? "Magnificent Item")}"><button class="trashBtn" data-delete-magnificent="${i}" type="button" title="Delete item" aria-label="Delete ${esc(item.name || "Magnificent item")}">${trashIcon()}</button></div></td><td><input class="inventory-slots" data-mag-slots="${i}" type="number" min="0" value="${esc(item.slots ?? 0)}"></td><td class="source">${esc(item.source ?? "Acquired")}${item.classGranted ? " · Class perk" : ""}</td></tr><tr class="magnificent-detail"><td></td><td colspan="3"><div class="mag-meta"><input data-mag-type="${i}" value="${esc(item.type ?? "")}" placeholder="Type"><input data-mag-cost="${i}" value="${esc(item.cost ?? "")}" placeholder="Cost"></div>${traits}<button class="tinyBtn addTraitBtn" data-add-trait="${i}" type="button">+ Trait</button></td></tr>`;
+    return `<tr class="magnificent-row"><td><input class="wear-check" data-mag-worn="${i}" type="checkbox" ${item.worn ? "checked" : ""}></td><td><div class="item-name-row"><input class="inventory-name" data-mag-name="${i}" value="${esc(item.name ?? "Magnificent Item")}">${isWeaponItem(item) ? '<span class="item-marker" title="Weapon">*</span>' : ''}<button class="trashBtn" data-delete-magnificent="${i}" type="button" title="Delete item" aria-label="Delete ${esc(item.name || "Magnificent item")}">${trashIcon()}</button></div></td><td><input class="inventory-slots" data-mag-slots="${i}" type="number" min="0" value="${esc(item.slots ?? 0)}"></td><td class="source">${esc(item.source ?? "Acquired")}${item.classGranted ? " · Class perk" : ""}</td></tr><tr class="magnificent-detail"><td></td><td colspan="3"><div class="mag-meta"><input data-mag-type="${i}" value="${esc(item.type ?? "")}" placeholder="Type"><input data-mag-cost="${i}" value="${esc(item.cost ?? "")}" placeholder="Cost"></div>${traits}<button class="tinyBtn addTraitBtn" data-add-trait="${i}" type="button">+ Trait</button></td></tr>`;
   }).join("");
   return normalRows + magnificentRows;
 }
@@ -91,8 +93,8 @@ function inventoryRows() {
 function renderTab() {
   if (activeTab === "inventory") {
     return `<section class="tab-page inventory-page">
-      <div class="inventory-summary"><strong>INVENTORY</strong><span>Capacity ${esc(model.inventorySlots)} slots</span><span>Worn items are checked; unchecked items are carried.</span></div>
-      <table class="inventory-table"><thead><tr><th>Worn</th><th>Item</th><th>Slots</th><th>Source</th></tr></thead><tbody>${inventoryRows()}</tbody></table>
+      <div class="inventory-summary"><strong>INVENTORY</strong><span>Capacity ${esc(model.inventorySlots)} slots</span><span>Checked items are equipped/worn; unchecked items are carried.</span></div>
+      <table class="inventory-table"><thead><tr><th>Equip</th><th>Item</th><th>Slots</th><th>Source</th></tr></thead><tbody>${inventoryRows()}</tbody></table>
       <div class="inventory-buttons"><button id="addInventoryBtn" class="smallBtn">+ Add item</button><button id="addMagnificentBtn" class="smallBtn secondary">+ Add Magnificent item</button></div>
     </section>`;
   }
@@ -118,10 +120,10 @@ function renderTab() {
         <section class="vitals card compact-vitals">
           <div class="stat courage"><span>COURAGE</span><div><input data-field="courageCurrent" type="number" value="${esc(model.courageCurrent)}"><em>/</em><input data-field="courageMax" type="number" value="${esc(model.courageMax)}"></div></div>
           <div class="stat"><span>DREAD</span><input data-field="dread" value="${esc(model.dread)}"></div>
-          <div class="stat"><span>ATTACK</span><input data-field="attack" type="number" value="${esc(model.attack)}"></div>
-          <div class="stat"><span>DEFENSE</span><input data-field="defense" type="number" value="${esc(model.defense)}"></div>
+          <div class="stat"><span>ATTACK</span><input data-field="attack" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.attack))}"></div>
+          <div class="stat"><span>DEFENSE</span><input data-field="defense" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.defense))}"></div>
           <div class="stat"><span>QUEST PTS</span><input data-field="questPoints" type="number" value="${esc(model.questPoints)}"></div>
-          <div class="stat"><span>BLOCK</span><input data-field="block" type="number" value="${esc(model.block)}"></div>
+          <div class="stat"><span>BLOCK †</span><input data-field="block" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.block))}"></div>
         </section>
         <div class="two-col-features">
           ${featureList("Proficiencies", model.proficiencies, "proficiencies", "No proficiencies")}
@@ -159,9 +161,9 @@ function render(message = "") {
 }
 
 function readForm() {
-  document.querySelectorAll("[data-field]").forEach(el => { const key = el.dataset.field; model[key] = el.type === "number" ? (Number(el.value) || 0) : el.value; });
-  document.querySelectorAll("[data-attr]").forEach(el => model.attributes[el.dataset.attr] = Number(el.value) || 0);
-  document.querySelectorAll("[data-skill]").forEach(el => model.skills[el.dataset.skill] = Number(el.value) || 0);
+  document.querySelectorAll("[data-field]").forEach(el => { const key = el.dataset.field; model[key] = (el.type === "number" || el.dataset.number === "true") ? (Number(String(el.value).replace(/[^0-9+.-]/g, "")) || 0) : el.value; });
+  document.querySelectorAll("[data-attr]").forEach(el => model.attributes[el.dataset.attr] = Number(String(el.value).replace(/[^0-9+.-]/g, "")) || 0);
+  document.querySelectorAll("[data-skill]").forEach(el => model.skills[el.dataset.skill] = Number(String(el.value).replace(/[^0-9+.-]/g, "")) || 0);
   document.querySelectorAll("[data-list]").forEach(el => model[el.dataset.list] = parseList(el.value));
   (model.inventory ?? []).forEach((item, i) => {
     if (typeof item === "string") model.inventory[i] = { name:item, slots:0, worn:false, source:"" };
@@ -206,7 +208,7 @@ async function loadFromToken(id) {
 async function saveToToken() {
   readForm();
   if (!selectedTokenId) { render("Choose a Character-layer token first."); return; }
-  const payload = { version: 6, updatedAt: new Date().toISOString(), sheet: model, source: currentRaw };
+  const payload = { version: 7, updatedAt: new Date().toISOString(), sheet: model, source: currentRaw };
   await OBR.scene.items.updateItems([selectedTokenId], items => { for (const item of items) item.metadata[META_KEY] = payload; });
   await OBR.notification.show(`Saved ${model.name || "character"} to token`);
   render("Saved to Owlbear token.");
@@ -215,7 +217,7 @@ async function saveToToken() {
 function downloadJson() {
   readForm();
   const output = currentRaw && typeof currentRaw === "object" ? structuredClone(currentRaw) : { character: {} };
-  output.owlbear = { version: 6, sheet: model };
+  output.owlbear = { version: 7, sheet: model };
   const blob = new Blob([JSON.stringify(output, null, 2)], { type: "application/json" });
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${(model.name || "Land-of-Eem-character").replace(/[^a-z0-9_-]+/gi, "-")}.eem.json`; a.click(); URL.revokeObjectURL(a.href);
 }
@@ -253,7 +255,15 @@ function popOutCharacter() {
   if (!win) render("Your browser blocked the pop-out window. Allow pop-ups for this site and try again.");
 }
 
+function updateEquipmentStats(message = "Equipment stats updated.") {
+  readForm();
+  if (model.equipmentBase) recalculateEquipmentStats(model);
+  render(message);
+}
+
 function bind() {
+  document.querySelectorAll("[data-inventory-worn],[data-mag-worn]").forEach(el => el.addEventListener("change", () => updateEquipmentStats()));
+  document.querySelectorAll("[data-mag-trait-name],[data-mag-trait-text],[data-mag-type],[data-mag-cost]").forEach(el => el.addEventListener("change", () => updateEquipmentStats()));
   document.querySelector("#refreshBtn")?.addEventListener("click", () => refreshItems());
   document.querySelector("#tokenSelect")?.addEventListener("change", e => loadFromToken(e.target.value));
   document.querySelector("#saveBtn")?.addEventListener("click", saveToToken);
@@ -263,9 +273,9 @@ function bind() {
   document.querySelector("#addInventoryBtn")?.addEventListener("click", () => { readForm(); model.inventory.push({name:"New item",slots:0,worn:false,type:"",cost:"",source:"Manual"}); render(); });
   document.querySelector("#addMagnificentBtn")?.addEventListener("click", () => { readForm(); model.magnificentItems.push({name:"Magnificent Item",slots:0,worn:false,type:"",cost:"",source:"Acquired",magnificent:true,classGranted:false,traits:[{name:"[trait]",text:"Trait description"}]}); render(); });
   document.querySelectorAll("[data-add-trait]").forEach(btn => btn.addEventListener("click", () => { readForm(); const i = Number(btn.dataset.addTrait); model.magnificentItems[i]?.traits.push({name:"[trait]",text:"Trait description"}); render(); }));
-  document.querySelectorAll("[data-delete-inventory]").forEach(btn => btn.addEventListener("click", () => { readForm(); const i = Number(btn.dataset.deleteInventory); const item = model.inventory[i]; const name = typeof item === "string" ? item : item?.name || "this item"; if (window.confirm(`Delete ${name}?`)) { model.inventory.splice(i, 1); render(); } }));
-  document.querySelectorAll("[data-delete-magnificent]").forEach(btn => btn.addEventListener("click", () => { readForm(); const i = Number(btn.dataset.deleteMagnificent); const name = model.magnificentItems[i]?.name || "this Magnificent item"; if (window.confirm(`Delete ${name}?`)) { model.magnificentItems.splice(i, 1); render(); } }));
-  document.querySelectorAll("[data-delete-trait]").forEach(btn => btn.addEventListener("click", () => { readForm(); const [i, j] = btn.dataset.deleteTrait.split(":").map(Number); model.magnificentItems[i]?.traits?.splice(j, 1); render(); }));
+  document.querySelectorAll("[data-delete-inventory]").forEach(btn => btn.addEventListener("click", () => { readForm(); const i = Number(btn.dataset.deleteInventory); const item = model.inventory[i]; const name = typeof item === "string" ? item : item?.name || "this item"; if (window.confirm(`Delete ${name}?`)) { model.inventory.splice(i, 1); if (model.equipmentBase) recalculateEquipmentStats(model); render(); } }));
+  document.querySelectorAll("[data-delete-magnificent]").forEach(btn => btn.addEventListener("click", () => { readForm(); const i = Number(btn.dataset.deleteMagnificent); const name = model.magnificentItems[i]?.name || "this Magnificent item"; if (window.confirm(`Delete ${name}?`)) { model.magnificentItems.splice(i, 1); if (model.equipmentBase) recalculateEquipmentStats(model); render(); } }));
+  document.querySelectorAll("[data-delete-trait]").forEach(btn => btn.addEventListener("click", () => { readForm(); const [i, j] = btn.dataset.deleteTrait.split(":").map(Number); model.magnificentItems[i]?.traits?.splice(j, 1); if (model.equipmentBase) recalculateEquipmentStats(model); render(); }));
   document.querySelector("#fileInput")?.addEventListener("change", async e => {
     const file = e.target.files?.[0]; if (!file) return;
     try {

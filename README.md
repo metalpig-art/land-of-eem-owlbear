@@ -37,3 +37,13 @@ Owlbear's custom context menu is attached to selected scene items. Depending on 
 - Added per-trait trash controls for Magnificent items.
 - Whole-item deletion asks for confirmation; trait removal is immediate.
 - Restored the extension toolbar icon to a transparent SVG `E` and updated the manifest to use `icon.svg`.
+
+## v0.2.6
+
+- Positive modifiers display with a leading `+`; negative modifiers keep `-`.
+- Skills are visually inset beneath their parent Attribute.
+- Weapon rows show `*` and the Block stat shows `†`.
+- Checking an item as equipped/worn recalculates supported stat modifiers immediately.
+- Medium/Heavy armor apply their normal Block when the item data does not already specify Block.
+- Item and Magnificent trait text can modify Attack, Defense, Block, Dread, maximum Courage, Inventory Slots, and named Skills.
+- Knight-Errant Second Skin recalculates when armor is equipped or removed.
