@@ -74,3 +74,6 @@ Owlbear's custom context menu is attached to selected scene items. Depending on 
 
 ## v0.3.0 roll cards
 Remote rolls open a styled Owlbear popover instead of a plain notification. Cards show roll math, have a 10-second auto-dismiss, pin/close controls and per-client local roll history (last 30). Pop-out and embedded sheet roll broadcasting remains supported. The roller sees their existing local roll modal; only remote clients get a card.
+
+## v0.3.1 — Roll card preferences
+Open the gear icon on any received roll card to choose Top center, Middle left, or Middle right placement, and 3, 5, 7, 10, 15 seconds or Until closed. Preferences are saved per browser; position changes apply to the next received roll. The receiver controls their own card preferences.

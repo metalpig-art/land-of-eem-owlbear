@@ -38,6 +38,27 @@ function reply(target, origin, requestId, type, body = {}) {
   try { target?.postMessage({ source: EXT_ID, requestId, type, ...body }, origin); } catch {}
 }
 
+const ROLL_SETTINGS_KEY = "eem-roll-card-settings-v1";
+const DEFAULT_ROLL_SETTINGS = { position: "top", duration: 5 };
+function rollSettings() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(ROLL_SETTINGS_KEY) || "{}");
+    return {
+      position: ["top", "left", "right"].includes(stored.position) ? stored.position : "top",
+      duration: [3, 5, 7, 10, 15, 0].includes(Number(stored.duration)) ? Number(stored.duration) : 5
+    };
+  } catch { return { ...DEFAULT_ROLL_SETTINGS }; }
+}
+async function rollAnchor(position, width, height) {
+  let viewportWidth = 1200, viewportHeight = 800;
+  try {
+    if (typeof OBR.viewport.getWidth === "function") viewportWidth = await OBR.viewport.getWidth();
+    if (typeof OBR.viewport.getHeight === "function") viewportHeight = await OBR.viewport.getHeight();
+  } catch {}
+  const left = position === "left" ? 18 : position === "right" ? Math.max(12, viewportWidth - width - 18) : Math.max(12, (viewportWidth - width) / 2);
+  const top = position === "top" ? 24 : Math.max(12, (viewportHeight - height) / 2);
+  return { left: Math.round(left), top: Math.round(top) };
+}
 async function showRollCard(data) {
   const text = String(data.text ?? "").slice(0, 3000);
   if (!text) return;
@@ -45,11 +66,14 @@ async function showRollCard(data) {
   url.searchParams.set("text", text);
   url.searchParams.set("name", text.split("\n")[0] || "Adventurer");
   url.searchParams.set("id", String(data.id || Date.now()));
+  const settings = rollSettings();
+  url.searchParams.set("duration", String(settings.duration));
+  url.searchParams.set("position", settings.position);
   try {
     await OBR.popover.close(ROLL_POPOVER).catch(() => {});
     await OBR.popover.open({
-      id: ROLL_POPOVER, url: url.href, width: 400, height: 350,
-      anchorReference: "POSITION", anchorPosition: {left: 400, top: 110},
+      id: ROLL_POPOVER, url: url.href, width: 400, height: 370,
+      anchorReference: "POSITION", anchorPosition: await rollAnchor(settings.position, 400, 370),
       disableClickAway: true
     });
   } catch (error) {
