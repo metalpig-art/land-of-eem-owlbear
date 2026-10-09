@@ -70,3 +70,7 @@ Owlbear's custom context menu is attached to selected scene items. Depending on 
 - Roll math is shown in brackets with raw die results in parentheses.
 - Roll broadcasts use REMOTE delivery so every other connected Owlbear participant, including GMs, receives the result while the roller does not.
 - Broadcast text mirrors the local roll result.
+
+
+## v0.3.0 roll cards
+Remote rolls open a styled Owlbear popover instead of a plain notification. Cards show roll math, have a 10-second auto-dismiss, pin/close controls and per-client local roll history (last 30). Pop-out and embedded sheet roll broadcasting remains supported. The roller sees their existing local roll modal; only remote clients get a card.

@@ -3,6 +3,7 @@ import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
 const EXT_ID = "com.metalpig.land-of-eem";
 const META_KEY = `${EXT_ID}/character`;
 const ROLL_CHANNEL = `${EXT_ID}/roll`;
+const ROLL_POPOVER = `${EXT_ID}/roll-card`;
 const POPUP_PREFIX = "land-of-eem-";
 
 async function getTokenPayload(tokenId) {
@@ -37,11 +38,31 @@ function reply(target, origin, requestId, type, body = {}) {
   try { target?.postMessage({ source: EXT_ID, requestId, type, ...body }, origin); } catch {}
 }
 
+async function showRollCard(data) {
+  const text = String(data.text ?? "").slice(0, 3000);
+  if (!text) return;
+  const url = new URL("./roll-card.html", location.href);
+  url.searchParams.set("text", text);
+  url.searchParams.set("name", text.split("\n")[0] || "Adventurer");
+  url.searchParams.set("id", String(data.id || Date.now()));
+  try {
+    await OBR.popover.close(ROLL_POPOVER).catch(() => {});
+    await OBR.popover.open({
+      id: ROLL_POPOVER, url: url.href, width: 400, height: 350,
+      anchorReference: "POSITION", anchorPosition: {left: 400, top: 110},
+      disableClickAway: true
+    });
+  } catch (error) {
+    console.warn("Land of Eem roll card unavailable", error);
+    await OBR.notification.show(text, "INFO");
+  }
+}
+
 OBR.onReady(async () => {
   OBR.broadcast.onMessage(ROLL_CHANNEL, async event => {
     const data = event?.data ?? {};
     if (data.type === "roll-result" && data.text) {
-      await OBR.notification.show(String(data.text), "INFO");
+      await showRollCard(data);
     }
   });
   // Keep the filter deliberately simple. Owlbear supports layer filters here;
@@ -86,7 +107,7 @@ OBR.onReady(async () => {
         const ok = await saveTokenPayload(msg.tokenId, msg.payload);
         reply(event.source, event.origin, msg.requestId, "popout-save-result", { ok });
       } else if (msg.type === "popout-broadcast-roll") {
-        await OBR.broadcast.sendMessage(ROLL_CHANNEL, { type: "roll-result", text: String(msg.text ?? "") }, { destination: "REMOTE" });
+        await OBR.broadcast.sendMessage(ROLL_CHANNEL, { type: "roll-result", text: String(msg.text ?? ""), id: `${Date.now()}-${Math.random().toString(36).slice(2)}` }, { destination: "REMOTE" });
         reply(event.source, event.origin, msg.requestId, "popout-broadcast-roll-result", { ok: true });
       }
     } catch (error) {
