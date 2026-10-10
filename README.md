@@ -1,3 +1,7 @@
+## v0.3.5.1 - Blank panel hotfix
+
+Replaced unsupported JSON module import with a standard JavaScript module.
+
 ## v0.3.5 — Bestiary library
 
 - GM-only searchable Bestiary Vol. 1 index with 190 entries and source page references.

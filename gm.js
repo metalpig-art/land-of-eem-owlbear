@@ -1,4 +1,4 @@
-import catalog from "./adversaries.json" with { type: "json" };
+import catalog from "./adversaries-data.js";
 // GM-only encounter tracker. Data is saved to the GM player's metadata, not to scene items.
 export function createGMPanel(OBR, channel, namespace) {
   const key = `${namespace}/gm-encounter-v1`;
