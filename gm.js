@@ -48,7 +48,20 @@ export function createGMPanel(OBR, channel, namespace) {
   let refresh = ()=>{};
   function mount(root,rerender) {
     refresh=rerender;
-    root.querySelector('#gmSearch')?.addEventListener('input',e=>{search=e.target.value;refresh();root.querySelector('#gmSearch')?.focus();});
+    root.querySelector('#gmSearch')?.addEventListener('input', e => {
+      // Update only the results list: rebuilding the whole sheet resets the caret.
+      search = e.target.value;
+      const list = root.querySelector('#gmCatalog');
+      if (!list) return;
+      const matches = catalog.filter(x => x.name.toLowerCase().includes(search.toLowerCase())).slice(0, 70);
+      list.replaceChildren(...matches.map(x => {
+        const option = document.createElement('option');
+        option.value = x.name;
+        option.textContent = `${x.name} · p.${x.page}${x.verifiedStats ? '' : ' (manual stats)'}`;
+        option.selected = selection === x.name;
+        return option;
+      }));
+    });
     root.querySelector('#gmCatalog')?.addEventListener('change',e=>{selection=e.target.value;const a=selectedEntry();if(a){selectedLevel=a.levelMin;selectedClass=a.classes[0]||'G';}refresh();});
     root.querySelector('#gmLevel')?.addEventListener('change',e=>{selectedLevel=Math.max(1,Math.min(10,n(e.target.value,1)));refresh();});
     root.querySelector('#gmClass')?.addEventListener('change',e=>{selectedClass=e.target.value;refresh();});

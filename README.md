@@ -1,3 +1,7 @@
+## v0.3.5.2 — GM search typing fix
+
+- Bestiary search updates results without recreating the search input, preserving normal typing and cursor position.
+
 ## v0.3.5.1 - Blank panel hotfix
 
 Replaced unsupported JSON module import with a standard JavaScript module.
