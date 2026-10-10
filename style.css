@@ -83,3 +83,24 @@ header{position:sticky}
   body:not(.popout-body) .workspace-right { border-left: 0; min-width: 0; }
   body:not(.popout-body) .sticky-vitals { top: 66px; }
 }
+
+/* v0.3.5.4: action buttons flow after all sheet content; never overlay fields. */
+body:not(.popout-body) main { padding-bottom: 12px; }
+body:not(.popout-body) .actions {
+  position: static; inset: auto; z-index: auto;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px; margin: 10px 0 0; padding: 0;
+}
+body:not(.popout-body) .actions button {
+  min-width: 0; width: 100%; padding: 8px 3px;
+  font: 700 10px/1.15 Arial, sans-serif; white-space: normal;
+}
+.extension-version {text-align:right; margin:7px 2px 1px; color:#806e50; font:10px Arial,sans-serif;}
+
+/* Ability-use tracking (character-specific; stored with token sheet) */
+.feature-list li.ability-entry{display:flex;align-items:flex-start;gap:9px}
+.ability-use-toggle{display:flex;align-items:center;gap:3px;flex:0 0 auto;cursor:pointer;white-space:nowrap;font:700 10px Arial,sans-serif;color:#946018;text-transform:none;letter-spacing:0}
+.ability-use-toggle input{width:15px;height:15px;margin:0;accent-color:#2f513a}
+.ability-entry-text{min-width:0;flex:1;white-space:pre-line}
+.ability-entry.ability-spent .ability-entry-text{opacity:.58}
+.ability-entry.ability-spent .ability-use-label{color:#2f513a}

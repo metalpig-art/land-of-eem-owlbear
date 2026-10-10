@@ -1,3 +1,16 @@
+## v0.3.5.5 — Ability use tracking
+
+- Added a **Used** checkbox to each character Ability on the Attributes tab in both the embedded and pop-out sheets.
+- Checked abilities are visually dimmed and their use state is saved with the character when you save to the token.
+- Uncheck after a refresh or when the GM permits reuse. Quest Point spending is manual; this update does not automatically deduct points.
+- Version labels updated in both sheets.
+
+## v0.3.5.4 — Compact action row and visible version
+
+- Embedded Save to token, Pop Out, and Export buttons share a compact single row after the sheet content and never cover character information.
+- Both embedded and pop-out sheets display their build version at the bottom.
+- No character or encounter data changes.
+
 ## v0.3.5.3 — GM search caret fix
 
 - Preserve the Bestiary search cursor and input across full sheet re-renders.

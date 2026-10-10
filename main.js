@@ -76,8 +76,16 @@ function attributeCards() {
   }).join("");
 }
 
+function abilityRows(items) {
+  return (items ?? []).map((item, index) => {
+    const key = `${index}:${String(item)}`;
+    const checked = Boolean(model.abilityUsage?.[key]);
+    return `<li class="ability-entry${checked ? " ability-spent" : ""}"><label class="ability-use-toggle" title="Mark ability used; spending a Quest Point to reuse is handled manually"><input type="checkbox" data-ability-used="${index}" ${checked ? "checked" : ""}><span class="ability-use-label">Used</span></label><span class="ability-entry-text">${esc(item)}</span></li>`;
+  }).join("");
+}
+
 function featureList(title, items, field, emptyText) {
-  const rows = (items ?? []).map(item => `<li>${esc(item)}</li>`).join("");
+  const rows = field === "abilities" ? abilityRows(items) : (items ?? []).map(item => `<li>${esc(item)}</li>`).join("");
   return `<section class="feature-panel"><h3>${esc(title)}</h3><ul class="feature-list" data-feature="${esc(field)}">${rows || `<li class="empty">${esc(emptyText)}</li>`}</ul></section>`;
 }
 
@@ -382,7 +390,7 @@ function render(message = "") {
       <div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div>
     </section>
     ${renderWorkspace()}
-    <div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div>
+    <div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div><div class="extension-version">Land of Eem · v0.3.5.5</div>
   </main>`;
   bind();
 }
@@ -391,6 +399,7 @@ function readForm() {
   document.querySelectorAll("[data-field]").forEach(el => { const key = el.dataset.field; model[key] = (el.type === "number" || el.dataset.number === "true") ? (Number(String(el.value).replace(/[^0-9+.-]/g, "")) || 0) : el.value; });
   document.querySelectorAll("[data-attr]").forEach(el => model.attributes[el.dataset.attr] = Number(String(el.value).replace(/[^0-9+.-]/g, "")) || 0);
   document.querySelectorAll("[data-skill]").forEach(el => model.skills[el.dataset.skill] = Number(String(el.value).replace(/[^0-9+.-]/g, "")) || 0);
+  document.querySelectorAll("[data-ability-used]").forEach(el => { const i = Number(el.dataset.abilityUsed); const key = `${i}:${String(model.abilities?.[i] ?? "")}`; model.abilityUsage ??= {}; model.abilityUsage[key] = el.checked; });
   document.querySelectorAll("[data-list]").forEach(el => model[el.dataset.list] = parseList(el.value));
   (model.inventory ?? []).forEach((item, i) => {
     if (typeof item === "string") model.inventory[i] = { name:item, slots:0, worn:false, source:"" };
@@ -515,6 +524,7 @@ function bind() {
   }
   document.querySelector("#refreshBtn")?.addEventListener("click", () => refreshItems());
   document.querySelector("#tokenSelect")?.addEventListener("change", e => loadFromToken(e.target.value));
+  document.querySelectorAll("[data-ability-used]").forEach(el => el.addEventListener("change", () => { readForm(); el.closest(".ability-entry")?.classList.toggle("ability-spent", el.checked); }));
   document.querySelector("#saveBtn")?.addEventListener("click", saveToToken);
   document.querySelector("#popOutBtn")?.addEventListener("click", popOutCharacter);
   document.querySelector("#exportBtn")?.addEventListener("click", downloadJson);

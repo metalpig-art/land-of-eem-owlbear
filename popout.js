@@ -65,8 +65,16 @@ function attributeCards() {
   }).join("");
 }
 
+function abilityRows(items) {
+  return (items ?? []).map((item, index) => {
+    const key = `${index}:${String(item)}`;
+    const checked = Boolean(model.abilityUsage?.[key]);
+    return `<li class="ability-entry${checked ? " ability-spent" : ""}"><label class="ability-use-toggle" title="Mark ability used; spending a Quest Point to reuse is handled manually"><input type="checkbox" data-ability-used="${index}" ${checked ? "checked" : ""}><span class="ability-use-label">Used</span></label><span class="ability-entry-text">${esc(item)}</span></li>`;
+  }).join("");
+}
+
 function featureList(title, items, emptyText) {
-  const rows = (items ?? []).map(item => `<li>${esc(item)}</li>`).join("");
+  const rows = title === "Abilities" ? abilityRows(items) : (items ?? []).map(item => `<li>${esc(item)}</li>`).join("");
   return `<section class="feature-panel"><h3>${esc(title)}</h3><ul class="feature-list">${rows || `<li class="empty">${esc(emptyText)}</li>`}</ul></section>`;
 }
 
@@ -262,11 +270,12 @@ function renderRollPanel() {
 }
 
 function render() {
-  app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>POPPED-OUT CHARACTER SHEET</span></div></div><div class="status">${esc(statusText)}</div></header><main class="popout-main"><section class="identity hero-card"><div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div><div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div><div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div></section>${renderWorkspace()}<div class="popout-actions"><button id="saveBtn" ${connected ? "" : "disabled"}>Save Character</button><button id="reloadBtn" class="secondary">Reload from Owlbear</button></div></main>`;
+  app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>POPPED-OUT CHARACTER SHEET</span></div></div><div class="status">${esc(statusText)}</div></header><main class="popout-main"><section class="identity hero-card"><div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div><div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div><div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div></section>${renderWorkspace()}<div class="popout-actions"><button id="saveBtn" ${connected ? "" : "disabled"}>Save Character</button><button id="reloadBtn" class="secondary">Reload from Owlbear</button></div><div class="extension-version">Land of Eem · v0.3.5.5</div></main>`;
   bind();
 }
 
 function readForm() {
+  document.querySelectorAll("[data-ability-used]").forEach(el => { const i = Number(el.dataset.abilityUsed); const key = `${i}:${String(model.abilities?.[i] ?? "")}`; model.abilityUsage ??= {}; model.abilityUsage[key] = el.checked; });
   document.querySelectorAll("[data-field]").forEach(el => { const key = el.dataset.field; model[key] = (el.type === "number" || el.dataset.number === "true") ? (Number(String(el.value).replace(/[^0-9+.-]/g, "")) || 0) : el.value; });
   document.querySelectorAll("[data-attr]").forEach(el => model.attributes[el.dataset.attr] = Number(String(el.value).replace(/[^0-9+.-]/g, "")) || 0);
   document.querySelectorAll("[data-skill]").forEach(el => model.skills[el.dataset.skill] = Number(String(el.value).replace(/[^0-9+.-]/g, "")) || 0);
@@ -347,6 +356,7 @@ function bind() {
   document.querySelector("#rollModalBackdrop")?.addEventListener("click", e => { if (e.target.id === "rollModalBackdrop") { rollPrompt = null; rollResult = null; render(); } });
   document.querySelectorAll("[data-inventory-worn],[data-mag-worn]").forEach(el => el.addEventListener("change", () => updateEquipmentStats()));
   document.querySelectorAll("[data-mag-trait-name],[data-mag-trait-text],[data-mag-type],[data-mag-cost]").forEach(el => el.addEventListener("change", () => updateEquipmentStats()));
+  document.querySelectorAll("[data-ability-used]").forEach(el => el.addEventListener("change", () => { readForm(); el.closest(".ability-entry")?.classList.toggle("ability-spent", el.checked); }));
   document.querySelector("#saveBtn")?.addEventListener("click", saveCharacter);
   document.querySelector("#reloadBtn")?.addEventListener("click", loadCharacter);
   document.querySelectorAll("[data-tab]").forEach(btn => btn.addEventListener("click", () => { readForm(); activeTab = btn.dataset.tab; render(); }));
