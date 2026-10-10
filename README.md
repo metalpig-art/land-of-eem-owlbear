@@ -1,3 +1,10 @@
+## v0.3.5 — Bestiary library
+
+- GM-only searchable Bestiary Vol. 1 index with 190 entries and source page references.
+- Add adversaries to the existing encounter tracker with level/class Courage estimates.
+- Entries with unverified stat extraction are marked for manual entry; check the book for special cases.
+- Core Rulebook adversaries are not yet imported.
+
 # Land of Eem Character Sheet for Owlbear Rodeo — v0.3.4
 
 ## v0.3.4 — GM encounter tracker

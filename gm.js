@@ -1,9 +1,14 @@
+import catalog from "./adversaries.json" with { type: "json" };
 // GM-only encounter tracker. Data is saved to the GM player's metadata, not to scene items.
 export function createGMPanel(OBR, channel, namespace) {
   const key = `${namespace}/gm-encounter-v1`;
   let adversaries = [];
   let lastRoll = null;
   let draft = null;
+  let search = "";
+  let selection = "";
+  let selectedLevel = 1;
+  let selectedClass = "G";
   const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const n = (v, fallback=0) => Number.isFinite(Number(v)) ? Number(v) : fallback;
   const sign = v => n(v)<0 ? `- ${Math.abs(n(v))}` : `+ ${n(v)}`;
@@ -13,8 +18,11 @@ export function createGMPanel(OBR, channel, namespace) {
     adversaries = Array.isArray(meta?.[key]) ? meta[key].map(x=>({...x})) : [];
   }
   async function persist() { await OBR.player.setMetadata({[key]:adversaries}); }
+  function selectedEntry(){return catalog.find(x=>x.name===selection);}
+  function courage(level,kind){return kind==='G'?level:kind==='B'?Math.round(level*3.5):Math.round(level*6.5);}
   function render() {
     return `<section class="gm-page"><div class="gm-toolbar"><div><h2>GM Encounter Tracker</h2><small>Private to the GM · saved to your Owlbear player profile</small></div><button id="gmAdd" type="button">+ Add adversary</button></div>
+    <div class="gm-library"><h3>Adversary Library — Bestiary Vol. 1</h3><input id="gmSearch" type="search" placeholder="Search adversaries…" value="${esc(search)}"><select id="gmCatalog" size="5" aria-label="Search results">${catalog.filter(x=>x.name.toLowerCase().includes(search.toLowerCase())).slice(0,70).map(x=>`<option value="${esc(x.name)}" ${selection===x.name?'selected':''}>${esc(x.name)} · p.${x.page}${x.verifiedStats?'':' (manual stats)'}</option>`).join('')}</select><div class="gm-library-options"><label>Level<input id="gmLevel" type="number" min="1" max="10" value="${selectedLevel}"></label><label>Class<select id="gmClass">${['G','B','C'].map(c=>`<option value="${c}" ${selectedClass===c?'selected':''}>${{G:'Goon',B:'Bruiser',C:'Champion'}[c]}</option>`).join('')}</select></label><button id="gmAddFromBook" type="button" ${!selectedEntry()?'disabled':''}>+ Add from Bestiary</button></div><small>${selectedEntry()?`Bestiary p.${selectedEntry().page} · ${selectedEntry().verifiedStats?'Stats extracted from entry':'Stats require manual entry after adding'} · ${selectedEntry().classes.length?'Allowed classes: '+selectedEntry().classes.join(', '):'Creeper or special entry; check book'}`:'Choose an adversary to add it to the encounter.'}</small></div>
     ${adversaries.length ? adversaries.map(a=>`<article class="gm-adversary" data-gm-id="${esc(a.id)}"><div class="gm-adversary-title"><input aria-label="Adversary name" data-gm-field="name" value="${esc(a.name)}"><button type="button" class="gm-trash" data-gm-delete="${esc(a.id)}" title="Delete adversary" aria-label="Delete ${esc(a.name)}">🗑</button></div><div class="gm-fields"><label>Courage current<input data-gm-field="current" type="number" min="0" value="${n(a.current)}"></label><label>Maximum<input data-gm-field="max" type="number" min="0" value="${n(a.max)}"></label><label>Attack bonus<input data-gm-field="attack" type="number" value="${n(a.attack)}"></label><label>Dread die<select data-gm-field="dread">${[4,6,8,10,12,20].map(d=>`<option value="d${d}" ${a.dread===`d${d}`?'selected':''}>d${d}</option>`).join('')}</select></label><label>Flat Dread<input data-gm-field="bonus" type="number" value="${n(a.bonus)}"></label><label>Defense<input data-gm-field="defense" type="number" value="${n(a.defense)}"></label></div><div class="gm-actions"><button type="button" data-gm-attack="${esc(a.id)}">⚔ Attack</button><button type="button" class="secondary" data-gm-counter="${esc(a.id)}">↩ Counterattack</button><button type="button" class="secondary" data-gm-damage="${esc(a.id)}">− Courage</button><button type="button" class="secondary" data-gm-heal="${esc(a.id)}">+ Courage</button></div></article>`).join('') : '<p class="gm-empty">No adversaries yet. Use + Add adversary to start an encounter.</p>'}
     ${draft ? `<div class="gm-dialog-backdrop"><section class="gm-dialog" role="dialog" aria-modal="true"><div class="gm-dialog-title"><strong>${esc(draft.counter?'Counterattack':'Attack')} — ${esc(draft.name)}</strong><button id="gmCancel" type="button" aria-label="Close">×</button></div><label>Target Defense<input id="gmTargetDefense" type="number" value="${n(draft.defense)}"></label><label>Attack type<select id="gmAttackType"><option value="melee">Melee</option><option value="ranged">Ranged</option></select></label><div class="gm-roll-modes"><button type="button" data-gm-mode="normal">Normal</button><button type="button" data-gm-mode="advantage">Advantage</button><button type="button" data-gm-mode="disadvantage">Disadvantage</button></div></section></div>` : ''}
     ${lastRoll ? `<div class="gm-last-roll" role="status"><button id="gmClearResult" type="button" aria-label="Dismiss result">×</button>${esc(lastRoll).replace(/\n/g,'<br>')}</div>` : ''}</section>`;
@@ -40,6 +48,11 @@ export function createGMPanel(OBR, channel, namespace) {
   let refresh = ()=>{};
   function mount(root,rerender) {
     refresh=rerender;
+    root.querySelector('#gmSearch')?.addEventListener('input',e=>{search=e.target.value;refresh();root.querySelector('#gmSearch')?.focus();});
+    root.querySelector('#gmCatalog')?.addEventListener('change',e=>{selection=e.target.value;const a=selectedEntry();if(a){selectedLevel=a.levelMin;selectedClass=a.classes[0]||'G';}refresh();});
+    root.querySelector('#gmLevel')?.addEventListener('change',e=>{selectedLevel=Math.max(1,Math.min(10,n(e.target.value,1)));refresh();});
+    root.querySelector('#gmClass')?.addEventListener('change',e=>{selectedClass=e.target.value;refresh();});
+    root.querySelector('#gmAddFromBook')?.addEventListener('click',async()=>{const a=selectedEntry();if(!a)return;if(a.classes.length&&!a.classes.includes(selectedClass)){alert('This class is not available for this adversary.');return;}const lvl=Math.max(a.levelMin,Math.min(a.levelMax,selectedLevel));const hp=a.classes.length?courage(lvl,selectedClass):0;adversaries.push({id:id(),name:`${a.name} (L${lvl}${a.classes.length?'-'+selectedClass:''})`,current:hp,max:hp,attack:a.verifiedStats?a.attack:0,defense:a.verifiedStats?a.defense:0,block:a.verifiedStats?a.block:0,dread:a.verifiedStats?a.dread.replace(/^1/,''):'d6',bonus:0,sourcePage:a.page});await persist();refresh();});
     root.querySelector('#gmAdd')?.addEventListener('click',async()=>{adversaries.push({id:id(),name:'New adversary',current:10,max:10,attack:0,defense:0,dread:'d6',bonus:0});await persist();refresh();});
     root.querySelectorAll('[data-gm-field]').forEach(el=>el.addEventListener('change',async()=>{const a=adversaries.find(x=>x.id===el.closest('[data-gm-id]')?.dataset.gmId);if(!a)return;const field=el.dataset.gmField;a[field]=['name','dread'].includes(field)?el.value:n(el.value);if(field==='max'&&a.current>a.max)a.current=a.max;await persist();refresh();}));
     root.querySelectorAll('[data-gm-delete]').forEach(el=>el.addEventListener('click',async()=>{const a=adversaries.find(x=>x.id===el.dataset.gmDelete);if(!a||!confirm(`Delete ${a.name}?`))return;adversaries=adversaries.filter(x=>x!==a);await persist();refresh();}));
