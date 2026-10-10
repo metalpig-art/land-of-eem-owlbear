@@ -1,4 +1,13 @@
-# Land of Eem Character Sheet for Owlbear Rodeo — v0.3.3
+# Land of Eem Character Sheet for Owlbear Rodeo — v0.3.4
+
+## v0.3.4 — GM encounter tracker
+
+- GM-only toggle beside Broadcast Settings switches the embedded sheet to a private encounter tracker.
+- Add multiple adversaries with name, current/max Courage, Attack, Defense, Dread die and flat Dread bonus.
+- Roll attacks and counterattacks using Normal, Advantage or Disadvantage and target Defense; Dread rolls at the same time.
+- Results broadcast to other room participants using the existing styled roll card.
+- Track damage/healing, delete adversaries and save encounter state in GM player metadata.
+- Player-facing character sheets and detached pop-out sheets are unchanged.
 
 ## v0.3.3 — Embedded attribute layout
 

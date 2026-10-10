@@ -1,3 +1,4 @@
+import { createGMPanel } from "./gm.js";
 import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
 import { extractCharacter, ATTRIBUTE_GROUPS } from "./extract.js";
 import { recalculateEquipmentStats, signedNumber, isWeaponItem } from "./equipment.js";
@@ -14,6 +15,9 @@ let activeTab = "attributes";
 let rollPrompt = null;
 let rollResult = null;
 let model = emptyModel();
+let gmAllowed = false;
+let gmMode = false;
+const gmPanel = createGMPanel(OBR, ROLL_CHANNEL, EXT_ID);
 
 function emptyModel() {
   return {
@@ -340,11 +344,19 @@ function renderRollSettings() {
   </section>`;
 }
 function render(message = "") {
+  if (gmMode && gmAllowed) {
+    app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>GM ENCOUNTER TRACKER</span></div></div><div id="status" class="status">${esc(message)}</div><div class="gm-header-actions"><button id="broadcastSettingsBtn" class="broadcast-settings-button" type="button">⚙ Broadcast settings</button><button id="gmToggleBtn" class="gm-toggle" type="button">Character Sheet</button></div></header><main>${renderRollSettings()}${gmPanel.render()}</main>`;
+    document.querySelector('#broadcastSettingsBtn')?.addEventListener('click',()=>{rollSettingsOpen=!rollSettingsOpen;render();});
+    for (const [id,field] of [['rollPositionSetting','position'],['rollDurationSetting','duration']]) document.querySelector(`#${id}`)?.addEventListener('change',event=>{const next=getRollSettings();next[field]=field==='duration'?Number(event.target.value):event.target.value;try{localStorage.setItem(ROLL_SETTINGS_KEY,JSON.stringify(next));}catch{}});
+    document.querySelector('#gmToggleBtn')?.addEventListener('click',()=>{gmMode=false;render();});
+    gmPanel.mount(app,()=>render());
+    return;
+  }
   const tokens = characterTokens(sceneItems);
   const tokenOptions = tokens.map(t => `<option value="${esc(t.id)}" ${t.id === selectedTokenId ? "selected" : ""}>${esc(tokenName(t))}</option>`).join("");
   app.innerHTML = `<header>
     <div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>OWLBEAR CHARACTER SHEET</span></div></div>
-    <div id="status" class="status">${esc(message)}</div><button id="broadcastSettingsBtn" class="broadcast-settings-button" type="button" aria-expanded="${rollSettingsOpen}">⚙ Broadcast settings</button>
+    <div id="status" class="status">${esc(message)}</div><button id="broadcastSettingsBtn" class="broadcast-settings-button" type="button" aria-expanded="${rollSettingsOpen}">⚙ Broadcast settings</button>${gmAllowed ? `<button id="gmToggleBtn" class="gm-toggle" type="button">GM Page</button>` : ""}
   </header><main>
     ${renderRollSettings()}
     <section class="utility-row">
@@ -479,6 +491,7 @@ function bind() {
   document.querySelector("#rollModalBackdrop")?.addEventListener("click", e => { if (e.target.id === "rollModalBackdrop") { rollPrompt = null; rollResult = null; render(); } });
   document.querySelectorAll("[data-inventory-worn],[data-mag-worn]").forEach(el => el.addEventListener("change", () => updateEquipmentStats()));
   document.querySelectorAll("[data-mag-trait-name],[data-mag-trait-text],[data-mag-type],[data-mag-cost]").forEach(el => el.addEventListener("change", () => updateEquipmentStats()));
+  document.querySelector('#gmToggleBtn')?.addEventListener('click',()=>{readForm();gmMode=true;render();});
   document.querySelector("#broadcastSettingsBtn")?.addEventListener("click", () => { rollSettingsOpen = !rollSettingsOpen; render(); });
   for (const [id, field] of [["rollPositionSetting", "position"], ["rollDurationSetting", "duration"]]) {
     document.querySelector(`#${id}`)?.addEventListener("change", event => {
@@ -516,6 +529,7 @@ function bind() {
 function start() {
   render("Connecting to Owlbear Rodeo…");
   OBR.onReady(async () => {
+    try { gmAllowed = (await OBR.player.getRole()) === 'GM'; if (gmAllowed) await gmPanel.load(); } catch (error) { console.warn('GM role check failed',error); }
     await OBR.action.setWidth(640);
     await OBR.action.setHeight(780);
     await refreshItems(false);
