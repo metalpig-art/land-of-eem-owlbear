@@ -1,4 +1,54 @@
-# Land of Eem Character Sheet for Owlbear Rodeo — v0.2.5
+# Land of Eem Character Sheet for Owlbear Rodeo — v0.3.3
+
+## v0.3.3 — Embedded attribute layout
+
+- In the embedded Owlbear sheet, Vim, Vigor, Knack, and Knowhow and their associated Skills appear in a single four-column row.
+- The detached pop-out sheet keeps its existing layout.
+
+## v0.3.2 broadcast placement and settings
+- Broadcast settings moved into the main extension header (gear button).
+- Positions: top center, middle left, middle right. Duration: 3, 5, 7, 10, 15 seconds, or until closed.
+- Corrected Owlbear popover anchor origins to match the requested viewport location; coordinates use Owlbear viewport dimensions, not the embedded character-sheet iframe dimensions.
+- Preferences are stored per browser and applied to the next incoming roll.
+
+
+v0.3.3: Embedded Owlbear sheet displays Vim, Vigor, Knack and Knowhow with their skills in a single four-column row. Detached pop-out layout unchanged.
+
+## v0.3.1 — Roll card preferences
+Open the gear icon on any received roll card to choose Top center, Middle left, or Middle right placement, and 3, 5, 7, 10, 15 seconds or Until closed. Preferences are saved per browser; position changes apply to the next received roll. The receiver controls their own card preferences.
+
+## v0.3.0 roll cards
+Remote rolls open a styled Owlbear popover instead of a plain notification. Cards show roll math, have a 10-second auto-dismiss, pin/close controls and per-client local roll history (last 30). Pop-out and embedded sheet roll broadcasting remains supported. The roller sees their existing local roll modal; only remote clients get a card.
+
+## v0.2.9
+- Vim, Vigor, Knack, Knowhow and all Skills are rollable in both the embedded Owlbear sheet and pop-out sheet.
+- Roll prompts remain modal with Normal / Advantage / Disadvantage.
+- Roll math is shown in brackets with raw die results in parentheses.
+- Roll broadcasts use REMOTE delivery so every other connected Owlbear participant, including GMs, receives the result while the roller does not.
+- Broadcast text mirrors the local roll result.
+
+## v0.2.8
+- Vim, Vigor, Knack and Knowhow are clickable checks.
+- Roll choices open in a modal dialog.
+- Completed checks and attacks are broadcast to all connected players using Owlbear Broadcast and appear as room notifications.
+- Pop-out rolls bridge through the extension background page so they can also broadcast to the room.
+
+## v0.2.7
+
+- Positive modifiers display with a leading `+`; negative modifiers keep `-`.
+- Skills are visually inset beneath their parent Attribute.
+- Weapon rows show `*` and the Block stat shows `†`.
+- Checking an item as equipped/worn recalculates supported stat modifiers immediately.
+- Medium/Heavy armor apply their normal Block when the item data does not already specify Block.
+- Item and Magnificent trait text can modify Attack, Defense, Block, Dread, maximum Courage, Inventory Slots, and named Skills.
+- Knight-Errant Second Skin recalculates when armor is equipped or removed.
+
+## v0.2.7
+- Keeps Attributes/Skills and the combat stat row visible while the right-side tab content changes.
+- Moves Attributes, Inventory, Background, and Journal tabs into the changing content area.
+- Adds a persistent Journal tab saved with the character.
+- Skill names are clickable 1d12 checks with Normal/Advantage/Disadvantage.
+- Attack is clickable and resolves Attack + target Defense and Dread in the same roll.
 
 ## v0.2.5
 
@@ -37,50 +87,3 @@ Owlbear's custom context menu is attached to selected scene items. Depending on 
 - Added per-trait trash controls for Magnificent items.
 - Whole-item deletion asks for confirmation; trait removal is immediate.
 - Restored the extension toolbar icon to a transparent SVG `E` and updated the manifest to use `icon.svg`.
-
-## v0.2.7
-
-- Positive modifiers display with a leading `+`; negative modifiers keep `-`.
-- Skills are visually inset beneath their parent Attribute.
-- Weapon rows show `*` and the Block stat shows `†`.
-- Checking an item as equipped/worn recalculates supported stat modifiers immediately.
-- Medium/Heavy armor apply their normal Block when the item data does not already specify Block.
-- Item and Magnificent trait text can modify Attack, Defense, Block, Dread, maximum Courage, Inventory Slots, and named Skills.
-- Knight-Errant Second Skin recalculates when armor is equipped or removed.
-
-
-## v0.2.7
-- Keeps Attributes/Skills and the combat stat row visible while the right-side tab content changes.
-- Moves Attributes, Inventory, Background, and Journal tabs into the changing content area.
-- Adds a persistent Journal tab saved with the character.
-- Skill names are clickable 1d12 checks with Normal/Advantage/Disadvantage.
-- Attack is clickable and resolves Attack + target Defense and Dread in the same roll.
-
-
-## v0.2.8
-- Vim, Vigor, Knack and Knowhow are clickable checks.
-- Roll choices open in a modal dialog.
-- Completed checks and attacks are broadcast to all connected players using Owlbear Broadcast and appear as room notifications.
-- Pop-out rolls bridge through the extension background page so they can also broadcast to the room.
-
-
-## v0.2.9
-- Vim, Vigor, Knack, Knowhow and all Skills are rollable in both the embedded Owlbear sheet and pop-out sheet.
-- Roll prompts remain modal with Normal / Advantage / Disadvantage.
-- Roll math is shown in brackets with raw die results in parentheses.
-- Roll broadcasts use REMOTE delivery so every other connected Owlbear participant, including GMs, receives the result while the roller does not.
-- Broadcast text mirrors the local roll result.
-
-
-## v0.3.0 roll cards
-Remote rolls open a styled Owlbear popover instead of a plain notification. Cards show roll math, have a 10-second auto-dismiss, pin/close controls and per-client local roll history (last 30). Pop-out and embedded sheet roll broadcasting remains supported. The roller sees their existing local roll modal; only remote clients get a card.
-
-## v0.3.1 — Roll card preferences
-Open the gear icon on any received roll card to choose Top center, Middle left, or Middle right placement, and 3, 5, 7, 10, 15 seconds or Until closed. Preferences are saved per browser; position changes apply to the next received roll. The receiver controls their own card preferences.
-
-
-## v0.3.2 broadcast placement and settings
-- Broadcast settings moved into the main extension header (gear button).
-- Positions: top center, middle left, middle right. Duration: 3, 5, 7, 10, 15 seconds, or until closed.
-- Corrected Owlbear popover anchor origins to match the requested viewport location; coordinates use Owlbear viewport dimensions, not the embedded character-sheet iframe dimensions.
-- Preferences are stored per browser and applied to the next incoming roll.

@@ -8,3 +8,6 @@ After GitHub Pages finishes deploying, update Owlbear using:
 https://metalpig-art.github.io/land-of-eem-owlbear/manifest.json?v=025
 
 Fully close the Owlbear tab and reopen it after updating.
+
+
+v0.3.3: Embedded Owlbear sheet displays Vim, Vigor, Knack and Knowhow with their skills in a single four-column row. Detached pop-out layout unchanged.

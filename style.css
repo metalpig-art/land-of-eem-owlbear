@@ -47,3 +47,39 @@ header{position:sticky}
 .broadcast-settings[hidden]{display:none}
 .broadcast-settings small{grid-column:1/-1;color:#745b38}
 @media(max-width:520px){.broadcast-settings{grid-template-columns:1fr}.broadcast-settings small{grid-column:1}.broadcast-settings-button{position:static;margin-top:4px}}
+
+/* v0.3.3: four attribute groups on one row in the embedded Owlbear popover only.
+   The detached sheet has body.popout-body and keeps its original layout. */
+@media (max-width: 900px) {
+  body:not(.popout-body) .sheet-workspace { display: block; }
+  body:not(.popout-body) .sticky-attributes {
+    position: relative; top: auto; max-height: none; overflow: visible;
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px; padding: 7px 6px 9px; border-right: 0;
+    border-bottom: 2px solid #e2bb76;
+  }
+  body:not(.popout-body) .attribute-card {
+    min-width: 0; margin: 0; padding: 5px 3px;
+    border: 1px solid #e0bd80; border-radius: 3px;
+  }
+  body:not(.popout-body) .attribute-head { gap: 2px; min-width: 0; }
+  body:not(.popout-body) .attribute-roll { font-size: 10px; padding: 2px 0; }
+  body:not(.popout-body) .attribute-head input {
+    width: 30px; min-width: 0; padding: 3px 1px; font-size: 10px;
+  }
+  body:not(.popout-body) .attribute-skills { margin-top: 6px; }
+  body:not(.popout-body) .skill-row {
+    grid-template-columns: minmax(0, 1fr) 29px; gap: 1px; padding: 2px 0;
+  }
+  body:not(.popout-body) .nested-skill { padding-left: 2px; }
+  body:not(.popout-body) .nested-skill::before { display: none; }
+  body:not(.popout-body) .skill-roll {
+    min-width: 0; padding: 2px 0; font-size: 9px;
+    overflow-wrap: anywhere; white-space: normal; text-align: left;
+  }
+  body:not(.popout-body) .skill-row input {
+    width: 29px; min-width: 0; padding: 3px 0; font-size: 10px;
+  }
+  body:not(.popout-body) .workspace-right { border-left: 0; min-width: 0; }
+  body:not(.popout-body) .sticky-vitals { top: 66px; }
+}
