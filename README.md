@@ -1,3 +1,8 @@
+## v0.3.5.3 — GM search caret fix
+
+- Preserve the Bestiary search cursor and input across full sheet re-renders.
+- Keeps the incremental search results from v0.3.5.2.
+
 ## v0.3.5.2 — GM search typing fix
 
 - Bestiary search updates results without recreating the search input, preserving normal typing and cursor position.

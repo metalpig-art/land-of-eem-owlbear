@@ -345,11 +345,24 @@ function renderRollSettings() {
 }
 function render(message = "") {
   if (gmMode && gmAllowed) {
+    // Keep the search caret and query intact across any Owlbear-triggered re-render.
+    const previousSearch = app.querySelector('#gmSearch');
+    const restoreSearch = previousSearch && document.activeElement === previousSearch;
+    const previousQuery = previousSearch?.value;
+    const previousCaret = restoreSearch ? previousSearch.selectionStart : null;
     app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>GM ENCOUNTER TRACKER</span></div></div><div id="status" class="status">${esc(message)}</div><div class="gm-header-actions"><button id="broadcastSettingsBtn" class="broadcast-settings-button" type="button">⚙ Broadcast settings</button><button id="gmToggleBtn" class="gm-toggle" type="button">Character Sheet</button></div></header><main>${renderRollSettings()}${gmPanel.render()}</main>`;
     document.querySelector('#broadcastSettingsBtn')?.addEventListener('click',()=>{rollSettingsOpen=!rollSettingsOpen;render();});
     for (const [id,field] of [['rollPositionSetting','position'],['rollDurationSetting','duration']]) document.querySelector(`#${id}`)?.addEventListener('change',event=>{const next=getRollSettings();next[field]=field==='duration'?Number(event.target.value):event.target.value;try{localStorage.setItem(ROLL_SETTINGS_KEY,JSON.stringify(next));}catch{}});
     document.querySelector('#gmToggleBtn')?.addEventListener('click',()=>{gmMode=false;render();});
     gmPanel.mount(app,()=>render());
+    if (restoreSearch) {
+      const input = app.querySelector('#gmSearch');
+      if (input) {
+        input.value = previousQuery;
+        input.focus({preventScroll:true});
+        if (previousCaret !== null) input.setSelectionRange(previousCaret, previousCaret);
+      }
+    }
     return;
   }
   const tokens = characterTokens(sceneItems);
