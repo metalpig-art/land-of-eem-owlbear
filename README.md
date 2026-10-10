@@ -77,3 +77,10 @@ Remote rolls open a styled Owlbear popover instead of a plain notification. Card
 
 ## v0.3.1 — Roll card preferences
 Open the gear icon on any received roll card to choose Top center, Middle left, or Middle right placement, and 3, 5, 7, 10, 15 seconds or Until closed. Preferences are saved per browser; position changes apply to the next received roll. The receiver controls their own card preferences.
+
+
+## v0.3.2 broadcast placement and settings
+- Broadcast settings moved into the main extension header (gear button).
+- Positions: top center, middle left, middle right. Duration: 3, 5, 7, 10, 15 seconds, or until closed.
+- Corrected Owlbear popover anchor origins to match the requested viewport location; coordinates use Owlbear viewport dimensions, not the embedded character-sheet iframe dimensions.
+- Preferences are stored per browser and applied to the next incoming roll.

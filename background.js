@@ -49,15 +49,35 @@ function rollSettings() {
     };
   } catch { return { ...DEFAULT_ROLL_SETTINGS }; }
 }
-async function rollAnchor(position, width, height) {
-  let viewportWidth = 1200, viewportHeight = 800;
+async function rollAnchor(position) {
+  // Owlbear viewport dimensions are screen-space pixels. The previous implementation
+  // calculated a top-left coordinate and then Owlbear applied its default anchor
+  // transform, shifting the card away from the requested screen position.
+  let width = 0, height = 0;
   try {
-    if (typeof OBR.viewport.getWidth === "function") viewportWidth = await OBR.viewport.getWidth();
-    if (typeof OBR.viewport.getHeight === "function") viewportHeight = await OBR.viewport.getHeight();
-  } catch {}
-  const left = position === "left" ? 18 : position === "right" ? Math.max(12, viewportWidth - width - 18) : Math.max(12, (viewportWidth - width) / 2);
-  const top = position === "top" ? 24 : Math.max(12, (viewportHeight - height) / 2);
-  return { left: Math.round(left), top: Math.round(top) };
+    [width, height] = await Promise.all([OBR.viewport.getWidth(), OBR.viewport.getHeight()]);
+  } catch (error) { console.warn("Viewport dimensions unavailable", error); }
+  if (!(width > 0 && height > 0)) {
+    // A best-effort fallback, not a claim that an iframe measures the host viewport.
+    width = Math.max(window.innerWidth, 640);
+    height = Math.max(window.innerHeight, 480);
+  }
+  const gutter = 18;
+  if (position === "left") return {
+    anchorPosition: { left: gutter, top: height / 2 },
+    anchorOrigin: { horizontal: "LEFT", vertical: "CENTER" },
+    transformOrigin: { horizontal: "LEFT", vertical: "CENTER" }
+  };
+  if (position === "right") return {
+    anchorPosition: { left: width - gutter, top: height / 2 },
+    anchorOrigin: { horizontal: "RIGHT", vertical: "CENTER" },
+    transformOrigin: { horizontal: "RIGHT", vertical: "CENTER" }
+  };
+  return {
+    anchorPosition: { left: width / 2, top: gutter },
+    anchorOrigin: { horizontal: "CENTER", vertical: "TOP" },
+    transformOrigin: { horizontal: "CENTER", vertical: "TOP" }
+  };
 }
 async function showRollCard(data) {
   const text = String(data.text ?? "").slice(0, 3000);
@@ -73,7 +93,7 @@ async function showRollCard(data) {
     await OBR.popover.close(ROLL_POPOVER).catch(() => {});
     await OBR.popover.open({
       id: ROLL_POPOVER, url: url.href, width: 400, height: 370,
-      anchorReference: "POSITION", anchorPosition: await rollAnchor(settings.position, 400, 370),
+      anchorReference: "POSITION", ...(await rollAnchor(settings.position)),
       disableClickAway: true
     });
   } catch (error) {

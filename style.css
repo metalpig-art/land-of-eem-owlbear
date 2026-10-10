@@ -39,3 +39,11 @@
 .attribute-roll,.skill-roll,.stat-roll{pointer-events:auto;position:relative;z-index:1}
 .roll-result span,.roll-result strong{display:block;white-space:pre-wrap}
 .roll-result span{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+
+/* v0.3.2: broadcast preferences in the main character-sheet window */
+.broadcast-settings-button{position:absolute;right:12px;top:12px;background:#f1e5c7;color:#2b4636;border:1px solid #c98b27;font-size:11px;padding:7px 10px}
+header{position:sticky}
+.broadcast-settings{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end;background:#fff6e6;border:1px solid #c98b27;padding:12px;margin-bottom:10px;border-radius:6px}
+.broadcast-settings[hidden]{display:none}
+.broadcast-settings small{grid-column:1/-1;color:#745b38}
+@media(max-width:520px){.broadcast-settings{grid-template-columns:1fr}.broadcast-settings small{grid-column:1}.broadcast-settings-button{position:static;margin-top:4px}}

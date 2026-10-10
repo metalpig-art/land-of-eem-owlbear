@@ -317,13 +317,36 @@ function renderRollPanel() {
   return `<div class="roll-modal-backdrop" id="rollModalBackdrop"><section class="roll-panel roll-modal" role="dialog" aria-modal="true" aria-label="${esc(prompt.label)} roll"><div class="roll-panel-head"><strong>${esc(prompt.label)} Roll</strong><button class="roll-close" id="closeRollBtn" type="button" aria-label="Close roll panel">×</button></div>${attackControls}<div class="roll-modes"><button data-roll-mode="normal" type="button">Normal</button><button data-roll-mode="advantage" type="button">Advantage</button><button data-roll-mode="disadvantage" type="button">Disadvantage</button></div>${result}</section></div>`;
 }
 
+const ROLL_SETTINGS_KEY = "eem-roll-card-settings-v1";
+function getRollSettings() {
+  try {
+    const v = JSON.parse(localStorage.getItem(ROLL_SETTINGS_KEY) || "{}");
+    return { position: ["top", "left", "right"].includes(v.position) ? v.position : "top",
+      duration: [0, 3, 5, 7, 10, 15].includes(Number(v.duration)) ? Number(v.duration) : 5 };
+  } catch { return { position: "top", duration: 5 }; }
+}
+let rollSettingsOpen = false;
+function renderRollSettings() {
+  const v = getRollSettings();
+  return `<section class="broadcast-settings" ${rollSettingsOpen ? "" : "hidden"}>
+    <label>Broadcast position<select id="rollPositionSetting">
+      <option value="top" ${v.position === "top" ? "selected" : ""}>Top center</option>
+      <option value="left" ${v.position === "left" ? "selected" : ""}>Middle left</option>
+      <option value="right" ${v.position === "right" ? "selected" : ""}>Middle right</option>
+    </select></label>
+    <label>Display duration<select id="rollDurationSetting">
+      ${[3,5,7,10,15,0].map(n => `<option value="${n}" ${v.duration === n ? "selected" : ""}>${n === 0 ? "Until closed" : n + " seconds"}</option>`).join("")}
+    </select></label><small>Personal browser preferences. Changes apply to incoming rolls.</small>
+  </section>`;
+}
 function render(message = "") {
   const tokens = characterTokens(sceneItems);
   const tokenOptions = tokens.map(t => `<option value="${esc(t.id)}" ${t.id === selectedTokenId ? "selected" : ""}>${esc(tokenName(t))}</option>`).join("");
   app.innerHTML = `<header>
     <div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>OWLBEAR CHARACTER SHEET</span></div></div>
-    <div id="status" class="status">${esc(message)}</div>
+    <div id="status" class="status">${esc(message)}</div><button id="broadcastSettingsBtn" class="broadcast-settings-button" type="button" aria-expanded="${rollSettingsOpen}">⚙ Broadcast settings</button>
   </header><main>
+    ${renderRollSettings()}
     <section class="utility-row">
       <div class="token-tools"><select id="tokenSelect"><option value="">Choose a Character token…</option>${tokenOptions}</select><button id="refreshBtn" class="secondary">Refresh</button></div>
       <label class="fileBtn">Import .eem.json<input id="fileInput" type="file" accept=".json,.eem.json,application/json"></label>
@@ -456,6 +479,14 @@ function bind() {
   document.querySelector("#rollModalBackdrop")?.addEventListener("click", e => { if (e.target.id === "rollModalBackdrop") { rollPrompt = null; rollResult = null; render(); } });
   document.querySelectorAll("[data-inventory-worn],[data-mag-worn]").forEach(el => el.addEventListener("change", () => updateEquipmentStats()));
   document.querySelectorAll("[data-mag-trait-name],[data-mag-trait-text],[data-mag-type],[data-mag-cost]").forEach(el => el.addEventListener("change", () => updateEquipmentStats()));
+  document.querySelector("#broadcastSettingsBtn")?.addEventListener("click", () => { rollSettingsOpen = !rollSettingsOpen; render(); });
+  for (const [id, field] of [["rollPositionSetting", "position"], ["rollDurationSetting", "duration"]]) {
+    document.querySelector(`#${id}`)?.addEventListener("change", event => {
+      const next = getRollSettings();
+      next[field] = field === "duration" ? Number(event.target.value) : event.target.value;
+      try { localStorage.setItem(ROLL_SETTINGS_KEY, JSON.stringify(next)); } catch {}
+    });
+  }
   document.querySelector("#refreshBtn")?.addEventListener("click", () => refreshItems());
   document.querySelector("#tokenSelect")?.addEventListener("change", e => loadFromToken(e.target.value));
   document.querySelector("#saveBtn")?.addEventListener("click", saveToToken);
