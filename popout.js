@@ -20,7 +20,7 @@ function emptyModel() {
     attributes: { Vim: 0, Vigor: 0, Knack: 0, Knowhow: 0 },
     courageCurrent: 0, courageMax: 0, dread: "", attack: 0, defense: 0, questPoints: 0,
     block: 0, inventorySlots: 20, xp: 0,
-    skills: {}, proficiencies: [], deficiencies: [], inventory: [], magnificentItems: [], racialTraits: [], classPerks: [], abilities: [],
+    skills: {}, addedAttributes: [], proficiencies: [], deficiencies: [], inventory: [], magnificentItems: [], racialTraits: [], classPerks: [], abilities: [],
     ideals: "", flaws: "", backstory: "", personalQuest: "", relationships: "", ally: "", rival: "", secondRival: "", notes: "", journal: ""
   };
 }
@@ -33,6 +33,7 @@ function normalizeModelSheet(sheet = {}) {
   const next = { ...base, ...sheet };
   next.attributes = { ...base.attributes, ...(sheet.attributes ?? {}) };
   next.skills = { ...(sheet.skills ?? {}) };
+  next.addedAttributes = Array.isArray(sheet.addedAttributes) ? sheet.addedAttributes.map(a => ({type:String(a.type||"abilities"),description:String(a.description||""),source:String(a.source||"")})) : [];
   next.inventory = Array.isArray(sheet.inventory) ? [...sheet.inventory] : [];
   next.magnificentItems = Array.isArray(sheet.magnificentItems) ? [...sheet.magnificentItems] : [];
   const keep = [];
@@ -74,9 +75,25 @@ function abilityRows(items) {
   }).join("");
 }
 
+function addedRows(type) {
+  return (model.addedAttributes || []).map((entry, i) => entry.type === type
+    ? `<li class="added-attribute"><span class="added-plus">+</span> <span>${esc(entry.description)}</span> <small>(${esc(entry.source || "Unknown source")})</small><button type="button" class="trashBtn added-delete" data-delete-added="${i}" title="Remove added attribute" aria-label="Remove added attribute">${trashIcon()}</button></li>`
+    : "").join("");
+}
+function addAttributeForm() {
+  return `<section class="feature-panel add-attribute-panel"><h3>Add Attribute</h3><div class="add-attribute-fields">
+    <label>Type<select id="addedAttributeType"><option value="proficiencies">Proficiency</option><option value="deficiencies">Deficiency</option><option value="racialTraits">Racial Trait</option><option value="classPerks">Class Perk</option><option value="abilities">Ability</option></select></label>
+    <label>Description<input id="addedAttributeDescription" placeholder="New attribute or ability" maxlength="600"></label>
+    <label>Source<input id="addedAttributeSource" placeholder="Item, quest, GM, etc." maxlength="120"></label>
+    <button type="button" class="smallBtn" id="addAttributeBtn">+ Add</button>
+  </div></section>`;
+}
+
 function featureList(title, items, emptyText) {
   const rows = title === "Abilities" ? abilityRows(items) : (items ?? []).map(item => `<li>${esc(item)}</li>`).join("");
-  return `<section class="feature-panel"><h3>${esc(title)}</h3><ul class="feature-list">${rows || `<li class="empty">${esc(emptyText)}</li>`}</ul></section>`;
+  const field = ({ "Proficiencies":"proficiencies","Deficiencies":"deficiencies","Racial Traits":"racialTraits","Class Perks":"classPerks","Abilities":"abilities" })[title];
+  const additions = addedRows(field);
+  return `<section class="feature-panel"><h3>${esc(title)}</h3><ul class="feature-list">${rows || (!additions ? `<li class="empty">${esc(emptyText)}</li>` : "")}${additions}</ul></section>`;
 }
 
 function trashIcon() {
@@ -99,7 +116,7 @@ function renderTab() {
   if (activeTab === "inventory") return `<section class="tab-page inventory-page"><div class="inventory-summary"><strong>INVENTORY</strong><span>Capacity ${esc(model.inventorySlots)} slots</span><span>Checked items are equipped/worn; unchecked items are carried.</span></div><table class="inventory-table"><thead><tr><th>Equip</th><th>Item</th><th>Slots</th><th>Source</th></tr></thead><tbody>${inventoryRows()}</tbody></table><div class="inventory-buttons"><button id="addInventoryBtn" class="smallBtn">+ Add item</button><button id="addMagnificentBtn" class="smallBtn secondary">+ Add Magnificent item</button></div></section>`;
   if (activeTab === "background") return `<section class="tab-page background-page"><div class="background-grid"><label>Ideals<textarea data-field="ideals">${esc(model.ideals)}</textarea></label><label>Flaws<textarea data-field="flaws">${esc(model.flaws)}</textarea></label><label>Personal Quest<textarea data-field="personalQuest">${esc(model.personalQuest)}</textarea></label><label>Backstory<textarea data-field="backstory">${esc(model.backstory)}</textarea></label><label class="wide">Relationships<textarea data-field="relationships">${esc(model.relationships)}</textarea></label><label>Ally<input data-field="ally" value="${esc(model.ally)}"></label><label>Rival<input data-field="rival" value="${esc(model.rival)}"></label><label>Second Rival<input data-field="secondRival" value="${esc(model.secondRival)}"></label><label class="wide">Notes<textarea data-field="notes">${esc(model.notes)}</textarea></label></div></section>`;
   if (activeTab === "journal") return `<section class="tab-page journal-page"><label>Journal<textarea class="journal-textarea" data-field="journal" placeholder="Session notes, clues, NPCs, plans, treasure, promises…">${esc(model.journal)}</textarea></label></section>`;
-  return `<section class="tab-page attributes-page"><div class="two-col-features">${featureList("Proficiencies", model.proficiencies, "No proficiencies")}${featureList("Deficiencies", model.deficiencies, "No deficiencies")}</div>${featureList("Racial Traits", model.racialTraits, "No racial traits")}${featureList("Class Perks", displayedClassPerks(), "No class perks")}${featureList("Abilities", model.abilities, "No abilities")}</section>`;
+  return `<section class="tab-page attributes-page"><div class="two-col-features">${featureList("Proficiencies", model.proficiencies, "No proficiencies")}${featureList("Deficiencies", model.deficiencies, "No deficiencies")}</div>${featureList("Racial Traits", model.racialTraits, "No racial traits")}${featureList("Class Perks", displayedClassPerks(), "No class perks")}${featureList("Abilities", model.abilities, "No abilities")}${addAttributeForm()}</section>`;
 }
 
 function renderWorkspace() {
@@ -271,7 +288,7 @@ function renderRollPanel() {
 }
 
 function render() {
-  app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>POPPED-OUT CHARACTER SHEET</span></div></div><div class="status">${esc(statusText)}</div></header><main class="popout-main"><section class="identity hero-card"><div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div><div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div><div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${tokenImageUrl ? `<img src="${esc(tokenImageUrl)}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div></section>${renderWorkspace()}<div class="popout-actions"><button id="saveBtn" ${connected ? "" : "disabled"}>Save Character</button><button id="reloadBtn" class="secondary">Reload from Owlbear</button></div><div class="extension-version">Land of Eem · v0.3.5.10</div></main>`;
+  app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>POPPED-OUT CHARACTER SHEET</span></div></div><div class="status">${esc(statusText)}</div></header><main class="popout-main"><section class="identity hero-card"><div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div><div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div><div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${tokenImageUrl ? `<img src="${esc(tokenImageUrl)}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div></section>${renderWorkspace()}<div class="popout-actions"><button id="saveBtn" ${connected ? "" : "disabled"}>Save Character</button><button id="reloadBtn" class="secondary">Reload from Owlbear</button></div><div class="extension-version">Land of Eem · v0.3.5.12</div></main>`;
   bind();
 }
 
@@ -349,7 +366,26 @@ function updateEquipmentStats(message = "Equipment stats updated.") {
   render(message);
 }
 
+function bindAddedAttributes() {
+  document.querySelector("#addAttributeBtn")?.addEventListener("click", () => {
+    const type = document.querySelector("#addedAttributeType")?.value;
+    const description = document.querySelector("#addedAttributeDescription")?.value.trim();
+    const source = document.querySelector("#addedAttributeSource")?.value.trim();
+    if (!description) { document.querySelector("#addedAttributeDescription")?.focus(); return; }
+    readForm();
+    model.addedAttributes ??= [];
+    model.addedAttributes.push({type,description,source});
+    render();
+  });
+  document.querySelectorAll("[data-delete-added]").forEach(btn => btn.addEventListener("click", () => {
+    readForm();
+    model.addedAttributes.splice(Number(btn.dataset.deleteAdded),1);
+    render();
+  }));
+}
+
 function bind() {
+  bindAddedAttributes();
   document.querySelectorAll("[data-roll-skill]").forEach(btn => btn.addEventListener("click", () => openSkillRoll(btn.dataset.rollSkill)));
   document.querySelectorAll("[data-roll-attribute]").forEach(btn => btn.addEventListener("click", () => openAttributeRoll(btn.dataset.rollAttribute)));
   document.querySelector("#attackRollBtn")?.addEventListener("click", openAttackRoll);

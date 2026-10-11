@@ -25,7 +25,7 @@ function emptyModel() {
     attributes: { Vim: 0, Vigor: 0, Knack: 0, Knowhow: 0 },
     courageCurrent: 0, courageMax: 0, dread: "", attack: 0, defense: 0, questPoints: 0,
     block: 0, inventorySlots: 20, xp: 0,
-    skills: {}, proficiencies: [], deficiencies: [], inventory: [], magnificentItems: [], racialTraits: [], classPerks: [], abilities: [],
+    skills: {}, addedAttributes: [], proficiencies: [], deficiencies: [], inventory: [], magnificentItems: [], racialTraits: [], classPerks: [], abilities: [],
     ideals: "", flaws: "", backstory: "", personalQuest: "", relationships: "", ally: "", rival: "", secondRival: "", notes: "", journal: ""
   };
 }
@@ -43,6 +43,7 @@ function normalizeModelSheet(sheet = {}) {
   const next = { ...base, ...sheet };
   next.attributes = { ...base.attributes, ...(sheet.attributes ?? {}) };
   next.skills = { ...(sheet.skills ?? {}) };
+  next.addedAttributes = Array.isArray(sheet.addedAttributes) ? sheet.addedAttributes.map(a => ({type:String(a.type||"abilities"),description:String(a.description||""),source:String(a.source||"")})) : [];
   next.inventory = Array.isArray(sheet.inventory) ? [...sheet.inventory] : [];
   next.magnificentItems = Array.isArray(sheet.magnificentItems) ? [...sheet.magnificentItems] : [];
   const keep = [];
@@ -87,9 +88,24 @@ function abilityRows(items) {
   }).join("");
 }
 
+function addedRows(type) {
+  return (model.addedAttributes || []).map((entry, i) => entry.type === type
+    ? `<li class="added-attribute"><span class="added-plus">+</span> <span>${esc(entry.description)}</span> <small>(${esc(entry.source || "Unknown source")})</small><button type="button" class="trashBtn added-delete" data-delete-added="${i}" title="Remove added attribute" aria-label="Remove added attribute">${trashIcon()}</button></li>`
+    : "").join("");
+}
+function addAttributeForm() {
+  return `<section class="feature-panel add-attribute-panel"><h3>Add Attribute</h3><div class="add-attribute-fields">
+    <label>Type<select id="addedAttributeType"><option value="proficiencies">Proficiency</option><option value="deficiencies">Deficiency</option><option value="racialTraits">Racial Trait</option><option value="classPerks">Class Perk</option><option value="abilities">Ability</option></select></label>
+    <label>Description<input id="addedAttributeDescription" placeholder="New attribute or ability" maxlength="600"></label>
+    <label>Source<input id="addedAttributeSource" placeholder="Item, quest, GM, etc." maxlength="120"></label>
+    <button type="button" class="smallBtn" id="addAttributeBtn">+ Add</button>
+  </div></section>`;
+}
+
 function featureList(title, items, field, emptyText) {
   const rows = field === "abilities" ? abilityRows(items) : (items ?? []).map(item => `<li>${esc(item)}</li>`).join("");
-  return `<section class="feature-panel"><h3>${esc(title)}</h3><ul class="feature-list" data-feature="${esc(field)}">${rows || `<li class="empty">${esc(emptyText)}</li>`}</ul></section>`;
+  const additions = addedRows(field);
+  return `<section class="feature-panel"><h3>${esc(title)}</h3><ul class="feature-list" data-feature="${esc(field)}">${rows || (!additions ? `<li class="empty">${esc(emptyText)}</li>` : "")}${additions}</ul></section>`;
 }
 
 function trashIcon() {
@@ -142,6 +158,7 @@ function renderTab() {
     ${featureList("Racial Traits", model.racialTraits, "racialTraits", "No racial traits")}
     ${featureList("Class Perks", displayedClassPerks(), "classPerks", "No class perks")}
     ${featureList("Abilities", model.abilities, "abilities", "No abilities")}
+    ${addAttributeForm()}
   </section>`;
 }
 
@@ -393,7 +410,7 @@ function render(message = "") {
       <div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${portraitSource() ? `<img src="${esc(portraitSource())}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div>
     </section>
     ${renderWorkspace()}
-    <div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div><div class="extension-version">Land of Eem · v0.3.5.11</div>
+    <div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div><div class="extension-version">Land of Eem · v0.3.5.12</div>
   </main>`;
   bind();
 }
@@ -502,7 +519,26 @@ function updateEquipmentStats(message = "Equipment stats updated.") {
   render(message);
 }
 
+function bindAddedAttributes() {
+  document.querySelector("#addAttributeBtn")?.addEventListener("click", () => {
+    const type = document.querySelector("#addedAttributeType")?.value;
+    const description = document.querySelector("#addedAttributeDescription")?.value.trim();
+    const source = document.querySelector("#addedAttributeSource")?.value.trim();
+    if (!description) { document.querySelector("#addedAttributeDescription")?.focus(); return; }
+    readForm();
+    model.addedAttributes ??= [];
+    model.addedAttributes.push({type,description,source});
+    render();
+  });
+  document.querySelectorAll("[data-delete-added]").forEach(btn => btn.addEventListener("click", () => {
+    readForm();
+    model.addedAttributes.splice(Number(btn.dataset.deleteAdded),1);
+    render();
+  }));
+}
+
 function bind() {
+  bindAddedAttributes();
   // Delegate roll clicks from the persistent app root. This keeps Attributes,
   // Skills and Attack rollable in Owlbear's embedded action popover after any render.
   app.onclick = event => {

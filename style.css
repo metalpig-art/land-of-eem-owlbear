@@ -114,3 +114,13 @@ body:not(.popout-body) .actions button {
 .portrait-url-label{display:block;font-size:8px;margin-top:4px}
 .portrait-url-label input{font-size:10px;padding:4px;width:100%;min-width:0}
 @media(max-width:620px){.hero-card{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 65px 96px;gap:6px}.hero-card .name-block{grid-column:1/3}.hero-card .identity-pair{grid-column:1/3}.hero-card .level-chip{grid-column:3;grid-row:1/3}.hero-card .portrait-slot{grid-column:4;grid-row:1/3}.portrait-frame{height:94px}}
+
+/* v0.3.5.12: custom attributes */
+.add-attribute-fields{display:grid;grid-template-columns:minmax(100px,1fr) minmax(160px,2fr) minmax(100px,1fr) auto;gap:8px;align-items:end}
+.add-attribute-fields label{min-width:0;font-size:11px;display:flex;flex-direction:column;gap:4px}
+.add-attribute-fields input,.add-attribute-fields select{width:100%;min-width:0;box-sizing:border-box}
+.added-attribute{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap}
+.added-plus{font-weight:900;color:#287046}
+.added-attribute small{font-size:10px;color:#82745d}
+.added-delete{margin-left:auto;flex-shrink:0}
+@media(max-width:700px){.add-attribute-fields{grid-template-columns:1fr 1fr}.add-attribute-fields label:nth-child(2){grid-column:span 2}}

@@ -1,3 +1,9 @@
+## v0.3.5.12 - Custom attributes
+
+- Add custom proficiencies, deficiencies, racial traits, class perks, or abilities at the bottom of Attributes.
+- Each addition displays a + marker and smaller source in parentheses in its matching section.
+- Remove custom additions with a trash button. Custom entries persist in saved sheet data and exports.
+
 ## v0.3.5.11 - Close dropdown after Pop Out
 
 - Clicking Pop Out opens the character in a separate window and automatically closes the embedded Owlbear dropdown.
