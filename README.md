@@ -1,3 +1,8 @@
+## v0.3.5.6 - Character portraits
+
+- Portrait at the top-right of embedded and pop-out sheets.
+- Enter a public HTTPS image URL. Saved with the character.
+
 ## v0.3.5.5 — Ability use tracking
 
 - Added a **Used** checkbox to each character Ability on the Attributes tab in both the embedded and pop-out sheets.

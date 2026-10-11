@@ -15,7 +15,7 @@ let statusText = "Connecting to Owlbear…";
 
 function emptyModel() {
   return {
-    name: "Unnamed adventurer", pronouns: "", className: "", folk: "", homeland: "", level: 1,
+    name: "Unnamed adventurer", pronouns: "", portraitUrl: "", className: "", folk: "", homeland: "", level: 1,
     attributes: { Vim: 0, Vigor: 0, Knack: 0, Knowhow: 0 },
     courageCurrent: 0, courageMax: 0, dread: "", attack: 0, defense: 0, questPoints: 0,
     block: 0, inventorySlots: 20, xp: 0,
@@ -270,7 +270,7 @@ function renderRollPanel() {
 }
 
 function render() {
-  app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>POPPED-OUT CHARACTER SHEET</span></div></div><div class="status">${esc(statusText)}</div></header><main class="popout-main"><section class="identity hero-card"><div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div><div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div><div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div></section>${renderWorkspace()}<div class="popout-actions"><button id="saveBtn" ${connected ? "" : "disabled"}>Save Character</button><button id="reloadBtn" class="secondary">Reload from Owlbear</button></div><div class="extension-version">Land of Eem · v0.3.5.5</div></main>`;
+  app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>POPPED-OUT CHARACTER SHEET</span></div></div><div class="status">${esc(statusText)}</div></header><main class="popout-main"><section class="identity hero-card"><div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div><div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div><div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${model.portraitUrl ? `<img src="${esc(model.portraitUrl)}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div><label class="portrait-url-label">Portrait URL<input data-field="portraitUrl" type="url" placeholder="https://..." value="${esc(model.portraitUrl)}"></label></div></section>${renderWorkspace()}<div class="popout-actions"><button id="saveBtn" ${connected ? "" : "disabled"}>Save Character</button><button id="reloadBtn" class="secondary">Reload from Owlbear</button></div><div class="extension-version">Land of Eem · v0.3.5.6</div></main>`;
   bind();
 }
 
