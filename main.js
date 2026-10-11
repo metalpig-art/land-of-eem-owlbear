@@ -94,12 +94,12 @@ function addedRows(type) {
     : "").join("");
 }
 function addAttributeForm() {
-  return `<section class="feature-panel add-attribute-panel"><h3>Add Attribute</h3><div class="add-attribute-fields">
+  return `<section class="feature-panel add-attribute-panel"><details class="add-attribute-details"><summary class="add-attribute-toggle">+ Add Attribute</summary><div class="add-attribute-fields">
     <label>Type<select id="addedAttributeType"><option value="proficiencies">Proficiency</option><option value="deficiencies">Deficiency</option><option value="racialTraits">Racial Trait</option><option value="classPerks">Class Perk</option><option value="abilities">Ability</option></select></label>
     <label>Description<input id="addedAttributeDescription" placeholder="New attribute or ability" maxlength="600"></label>
     <label>Source<input id="addedAttributeSource" placeholder="Item, quest, GM, etc." maxlength="120"></label>
     <button type="button" class="smallBtn" id="addAttributeBtn">+ Add</button>
-  </div></section>`;
+  </div></details></section>`;
 }
 
 function featureList(title, items, field, emptyText) {
@@ -410,7 +410,7 @@ function render(message = "") {
       <div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${portraitSource() ? `<img src="${esc(portraitSource())}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div>
     </section>
     ${renderWorkspace()}
-    <div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div><div class="extension-version">Land of Eem · v0.3.5.12</div>
+    <div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div><div class="extension-version">Land of Eem · v0.3.5.13</div>
   </main>`;
   bind();
 }

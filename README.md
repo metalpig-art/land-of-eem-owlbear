@@ -1,3 +1,9 @@
+## v0.3.5.13 - Collapsible Add Attribute
+
+- Replaces the always-visible attribute entry fields with a compact + Add Attribute control.
+- Clicking expands Type, Description, Source and Add controls; clicking again collapses them.
+- Applies to both embedded and pop-out sheets.
+
 ## v0.3.5.12 - Custom attributes
 
 - Add custom proficiencies, deficiencies, racial traits, class perks, or abilities at the bottom of Attributes.

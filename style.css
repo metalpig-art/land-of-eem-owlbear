@@ -124,3 +124,12 @@ body:not(.popout-body) .actions button {
 .added-attribute small{font-size:10px;color:#82745d}
 .added-delete{margin-left:auto;flex-shrink:0}
 @media(max-width:700px){.add-attribute-fields{grid-template-columns:1fr 1fr}.add-attribute-fields label:nth-child(2){grid-column:span 2}}
+
+/* v0.3.5.13 compact attribute entry */
+.add-attribute-panel{padding:7px 10px}
+.add-attribute-details{width:100%}
+.add-attribute-toggle{display:inline-flex;align-items:center;cursor:pointer;border:1px solid #b88c45;border-radius:5px;background:#f2e5cd;color:#3b5039;font-weight:700;padding:7px 12px;font-size:12px;list-style:none;user-select:none}
+.add-attribute-toggle::-webkit-details-marker{display:none}
+.add-attribute-toggle:hover{background:#e9d4ad}
+.add-attribute-details[open] .add-attribute-toggle{margin-bottom:10px}
+.add-attribute-toggle:focus-visible{outline:2px solid #3b5039;outline-offset:2px}
