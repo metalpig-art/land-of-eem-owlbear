@@ -1,3 +1,8 @@
+## v0.3.5.11 - Close dropdown after Pop Out
+
+- Clicking Pop Out opens the character in a separate window and automatically closes the embedded Owlbear dropdown.
+- The dropdown can be reopened normally. If the browser blocks the popup, the dropdown remains open and shows an error.
+
 ## v0.3.5.10 - Pop-out character loading repair
 
 - Corrects a portrait rendering variable typo that prevented pop-out sheets from rendering.

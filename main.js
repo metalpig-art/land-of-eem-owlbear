@@ -393,7 +393,7 @@ function render(message = "") {
       <div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${portraitSource() ? `<img src="${esc(portraitSource())}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div>
     </section>
     ${renderWorkspace()}
-    <div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div><div class="extension-version">Land of Eem · v0.3.5.10</div>
+    <div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div><div class="extension-version">Land of Eem · v0.3.5.11</div>
   </main>`;
   bind();
 }
@@ -491,7 +491,9 @@ function popOutCharacter() {
   url.searchParams.set("token", selectedTokenId);
   const popupName = `land-of-eem-${selectedTokenId}`;
   const win = window.open(url.href, popupName, "popup=yes,width=760,height=900,resizable=yes,scrollbars=yes");
-  if (!win) render("Your browser blocked the pop-out window. Allow pop-ups for this site and try again.");
+  if (!win) { render("Your browser blocked the pop-out window. Allow pop-ups for this site and try again."); return; }
+  // Only dismiss the embedded action after the detached window successfully opens.
+  OBR.action.close().catch(error => console.warn("Could not close extension dropdown", error));
 }
 
 function updateEquipmentStats(message = "Equipment stats updated.") {
