@@ -11,6 +11,7 @@ let activeTab = "attributes";
 let rollPrompt = null;
 let rollResult = null;
 let connected = false;
+let tokenImageUrl = "";
 let statusText = "Connecting to Owlbear…";
 
 function emptyModel() {
@@ -260,7 +261,7 @@ function broadcastRollResult(result) {
 function renderRollPanel() {
   if (!rollPrompt && !rollResult) return "";
   const prompt = rollPrompt ?? rollResult;
-  const attackControls = prompt.kind === "attack" ? `<div class="attack-options"><label>Target Defense<input id="targetDefense" type="text" inputmode="numeric" value="${esc(prompt.targetDefense ?? rollResult?.defense ?? 0)}"></label><label>Attack Type<select id="attackType"><option value="melee" ${(prompt.attackType ?? rollResult?.attackType) === "melee" ? "selected" : ""}>Melee</option><option value="ranged" ${(prompt.attackType ?? rollResult?.attackType) === "ranged" ? "selected" : ""}>Ranged</option></select></label></div>` : "";
+  const attackControls = prompt.kind === "attack" ? `<div class="attack-options"><label>Target Defense<input id="targetDefense" type="number" step="1" value="${esc(prompt.targetDefense ?? rollResult?.defense ?? 0)}"></label><label>Attack Type<select id="attackType"><option value="melee" ${(prompt.attackType ?? rollResult?.attackType) === "melee" ? "selected" : ""}>Melee</option><option value="ranged" ${(prompt.attackType ?? rollResult?.attackType) === "ranged" ? "selected" : ""}>Ranged</option></select></label></div>` : "";
   let result = "";
   if (rollResult) {
     const lines = rollDisplayLines(rollResult, false);
@@ -270,7 +271,7 @@ function renderRollPanel() {
 }
 
 function render() {
-  app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>POPPED-OUT CHARACTER SHEET</span></div></div><div class="status">${esc(statusText)}</div></header><main class="popout-main"><section class="identity hero-card"><div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div><div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div><div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${model.portraitUrl ? `<img src="${esc(model.portraitUrl)}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div><label class="portrait-url-label">Portrait URL<input data-field="portraitUrl" type="url" placeholder="https://..." value="${esc(model.portraitUrl)}"></label></div></section>${renderWorkspace()}<div class="popout-actions"><button id="saveBtn" ${connected ? "" : "disabled"}>Save Character</button><button id="reloadBtn" class="secondary">Reload from Owlbear</button></div><div class="extension-version">Land of Eem · v0.3.5.6</div></main>`;
+  app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>POPPED-OUT CHARACTER SHEET</span></div></div><div class="status">${esc(statusText)}</div></header><main class="popout-main"><section class="identity hero-card"><div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div><div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div><div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${(tokenImageUrl || model.portraitUrl) ? `<img src="${esc(tokenImageUrl || model.portraitUrl)}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div><label class="portrait-url-label">Portrait URL<input data-field="portraitUrl" type="url" placeholder="https://..." value="${esc(model.portraitUrl)}"></label></div></section>${renderWorkspace()}<div class="popout-actions"><button id="saveBtn" ${connected ? "" : "disabled"}>Save Character</button><button id="reloadBtn" class="secondary">Reload from Owlbear</button></div><div class="extension-version">Land of Eem · v0.3.5.7</div></main>`;
   bind();
 }
 
@@ -323,6 +324,7 @@ async function loadCharacter() {
     if (!result.ok || !result.payload?.sheet) throw new Error("No Land of Eem character is saved on that token.");
     source = result.payload.source ?? null;
     model = normalizeModelSheet(result.payload.sheet);
+    tokenImageUrl = result.tokenImageUrl || "";
     connected = true;
     statusText = "Connected to Owlbear. Keep this window beside the dice roller.";
     render();

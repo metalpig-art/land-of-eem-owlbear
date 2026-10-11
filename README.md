@@ -1,3 +1,10 @@
+## v0.3.5.7 — Token portraits and attack controls
+
+- Portrait automatically displays the image of the selected Owlbear Character-layer token, including in the pop-out sheet. A manually entered portrait URL remains a fallback.
+- GM adversary trash buttons are larger and easier to click.
+- Character attack dialogs now use native numeric Target Defense controls with up/down steppers, like the GM attack dialog.
+- Both sheet footers display v0.3.5.7.
+
 ## v0.3.5.6 - Character portraits
 
 - Portrait at the top-right of embedded and pop-out sheets.
