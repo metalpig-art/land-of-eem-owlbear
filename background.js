@@ -133,6 +133,9 @@ OBR.onReady(async () => {
       // Open directly from this persistent background page. The popped-out
       // window can then use window.opener to keep talking to Owlbear.
       openCharacterWindow(token.id);
+      // Close the context menu where the installed SDK exposes a close method.
+      // Otherwise Owlbear controls the native context menu lifecycle.
+      try { await OBR.contextMenu.close?.(); } catch {}
     }
   });
 
@@ -146,7 +149,14 @@ OBR.onReady(async () => {
     try {
       if (msg.type === "popout-load") {
         const payload = await getTokenPayload(msg.tokenId);
-        reply(event.source, event.origin, msg.requestId, "popout-load-result", { ok: !!payload?.sheet, payload });
+        let tokenImageUrl = "";
+        if (await OBR.scene.isReady()) {
+          const items = await OBR.scene.items.getItems([msg.tokenId]);
+          const item = items?.[0];
+          const image = item?.image;
+          tokenImageUrl = image?.url || image?.thumbnail || "";
+        }
+        reply(event.source, event.origin, msg.requestId, "popout-load-result", { ok: !!payload?.sheet, payload, tokenImageUrl });
       } else if (msg.type === "popout-save") {
         const ok = await saveTokenPayload(msg.tokenId, msg.payload);
         reply(event.source, event.origin, msg.requestId, "popout-save-result", { ok });

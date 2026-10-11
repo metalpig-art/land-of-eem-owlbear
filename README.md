@@ -1,3 +1,14 @@
+## v0.3.5.9 - Token menu pop-out fix
+
+- The right-click token pop-out now receives the selected token image from the background bridge.
+- Attempts to close the context menu after opening where supported by the Owlbear SDK; native menu dismissal remains controlled by Owlbear.
+
+## v0.3.5.8 — Token portrait only
+
+- Removed the Portrait URL input from both embedded and pop-out sheets.
+- Portrait displays the connected Owlbear token image. Existing character data is preserved.
+- Updated footer version labels.
+
 ## v0.3.5.7 — Token portraits and attack controls
 
 - Portrait automatically displays the image of the selected Owlbear Character-layer token, including in the pop-out sheet. A manually entered portrait URL remains a fallback.
