@@ -1,3 +1,8 @@
+## v0.3.5.10 - Pop-out character loading repair
+
+- Corrects a portrait rendering variable typo that prevented pop-out sheets from rendering.
+- Makes token portrait retrieval optional so a portrait lookup failure does not prevent character loading.
+
 ## v0.3.5.9 - Token menu pop-out fix
 
 - The right-click token pop-out now receives the selected token image from the background bridge.

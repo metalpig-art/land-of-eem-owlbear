@@ -150,11 +150,14 @@ OBR.onReady(async () => {
       if (msg.type === "popout-load") {
         const payload = await getTokenPayload(msg.tokenId);
         let tokenImageUrl = "";
-        if (await OBR.scene.isReady()) {
-          const items = await OBR.scene.items.getItems([msg.tokenId]);
-          const item = items?.[0];
-          const image = item?.image;
-          tokenImageUrl = image?.url || image?.thumbnail || "";
+        try {
+          if (await OBR.scene.isReady()) {
+            const items = await OBR.scene.items.getItems([msg.tokenId]);
+            const item = items?.[0];
+            tokenImageUrl = item?.image?.url || item?.image?.thumbnail || item?.image?.src || "";
+          }
+        } catch (imageError) {
+          console.warn("Token portrait unavailable; loading character without portrait", imageError);
         }
         reply(event.source, event.origin, msg.requestId, "popout-load-result", { ok: !!payload?.sheet, payload, tokenImageUrl });
       } else if (msg.type === "popout-save") {
