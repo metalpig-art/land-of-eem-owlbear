@@ -112,10 +112,24 @@ function trashIcon() {
   return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-1 11H8L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z"/></svg>`;
 }
 
+function itemSpecialDetails(item) {
+  if (!item || typeof item === "string") return "";
+  const lines = [];
+  const add = value => { if (typeof value === "string" && value.trim() && !lines.includes(value.trim())) lines.push(value.trim()); };
+  for (const key of ["description", "effect", "effects", "properties", "property", "special", "ability", "notes"]) add(item[key]);
+  for (const trait of item.traits ?? []) {
+    if (typeof trait === "string") add(trait);
+    else if (trait && typeof trait === "object") add([trait.name, trait.text || trait.description].filter(Boolean).join(" — "));
+  }
+  // Standard Buckler rule; keep separate from item rarity/cost metadata.
+  if (/^buckler\b/i.test(String(item.name ?? "")) && !lines.some(line => /block 1d4 dread/i.test(line))) add("Twice every Combat, Block 1d4 Dread.");
+  return lines.length ? `<div class="inventory-item-details">${lines.map(line => `<div>${esc(line)}</div>`).join("")}</div>` : "";
+}
+
 function inventoryRows() {
   const normalRows = (model.inventory ?? []).map((item, i) => {
     const obj = typeof item === "string" ? { name:item, slots:0, worn:false, source:"" } : item;
-    return `<tr><td><input class="wear-check" data-inventory-worn="${i}" type="checkbox" ${obj.worn ? "checked" : ""}></td><td><div class="item-name-row"><input class="inventory-name" data-inventory-name="${i}" value="${esc(obj.name)}">${isWeaponItem(obj) ? '<span class="item-marker" title="Weapon">*</span>' : ''}<button class="trashBtn" data-delete-inventory="${i}" type="button" title="Delete item" aria-label="Delete ${esc(obj.name || "item")}">${trashIcon()}</button></div></td><td><input class="inventory-slots" data-inventory-slots="${i}" type="number" min="0" value="${esc(obj.slots ?? 0)}"></td><td class="source">${esc(obj.source ?? "")}</td></tr>`;
+    return `<tr><td><input class="wear-check" data-inventory-worn="${i}" type="checkbox" ${obj.worn ? "checked" : ""}></td><td><div class="item-name-row"><input class="inventory-name" data-inventory-name="${i}" value="${esc(obj.name)}">${isWeaponItem(obj) ? '<span class="item-marker" title="Weapon">*</span>' : ''}<button class="trashBtn" data-delete-inventory="${i}" type="button" title="Delete item" aria-label="Delete ${esc(obj.name || "item")}">${trashIcon()}</button></div>${itemSpecialDetails(obj)}</td><td><input class="inventory-slots" data-inventory-slots="${i}" type="number" min="0" value="${esc(obj.slots ?? 0)}"></td><td class="source">${esc(obj.source ?? "")}</td></tr>`;
   }).join("");
   const magnificentRows = (model.magnificentItems ?? []).map((item, i) => {
     const traits = (item.traits ?? []).map((trait, j) => `<div class="trait-edit"><input data-mag-trait-name="${i}:${j}" value="${esc(trait.name ?? "")}" placeholder="[trait]"><input data-mag-trait-text="${i}:${j}" value="${esc(trait.text ?? "")}" placeholder="Trait description"><button class="trashBtn traitTrashBtn" data-delete-trait="${i}:${j}" type="button" title="Remove trait" aria-label="Remove trait ${esc(trait.name || "trait")}">${trashIcon()}</button></div>`).join("");
@@ -410,7 +424,7 @@ function render(message = "") {
       <div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${portraitSource() ? `<img src="${esc(portraitSource())}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div>
     </section>
     ${renderWorkspace()}
-    <div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div><div class="extension-version">Land of Eem · v0.4.0</div>
+    <div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div><div class="extension-version">Land of Eem · v0.4.1</div>
   </main>`;
   bind();
 }

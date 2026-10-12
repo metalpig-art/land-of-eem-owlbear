@@ -100,10 +100,24 @@ function trashIcon() {
   return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-1 11H8L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z"/></svg>`;
 }
 
+function itemSpecialDetails(item) {
+  if (!item || typeof item === "string") return "";
+  const lines = [];
+  const add = value => { if (typeof value === "string" && value.trim() && !lines.includes(value.trim())) lines.push(value.trim()); };
+  for (const key of ["description", "effect", "effects", "properties", "property", "special", "ability", "notes"]) add(item[key]);
+  for (const trait of item.traits ?? []) {
+    if (typeof trait === "string") add(trait);
+    else if (trait && typeof trait === "object") add([trait.name, trait.text || trait.description].filter(Boolean).join(" — "));
+  }
+  // Standard Buckler rule; keep separate from item rarity/cost metadata.
+  if (/^buckler\b/i.test(String(item.name ?? "")) && !lines.some(line => /block 1d4 dread/i.test(line))) add("Twice every Combat, Block 1d4 Dread.");
+  return lines.length ? `<div class="inventory-item-details">${lines.map(line => `<div>${esc(line)}</div>`).join("")}</div>` : "";
+}
+
 function inventoryRows() {
   const normalRows = (model.inventory ?? []).map((item, i) => {
     const obj = typeof item === "string" ? { name:item, slots:0, worn:false, source:"" } : item;
-    return `<tr><td><input class="wear-check" data-inventory-worn="${i}" type="checkbox" ${obj.worn ? "checked" : ""}></td><td><div class="item-name-row"><input class="inventory-name" data-inventory-name="${i}" value="${esc(obj.name)}">${isWeaponItem(obj) ? '<span class="item-marker" title="Weapon">*</span>' : ''}<button class="trashBtn" data-delete-inventory="${i}" type="button" title="Delete item" aria-label="Delete ${esc(obj.name || "item")}">${trashIcon()}</button></div></td><td><input class="inventory-slots" data-inventory-slots="${i}" type="number" min="0" value="${esc(obj.slots ?? 0)}"></td><td class="source">${esc(obj.source ?? "")}</td></tr>`;
+    return `<tr><td><input class="wear-check" data-inventory-worn="${i}" type="checkbox" ${obj.worn ? "checked" : ""}></td><td><div class="item-name-row"><input class="inventory-name" data-inventory-name="${i}" value="${esc(obj.name)}">${isWeaponItem(obj) ? '<span class="item-marker" title="Weapon">*</span>' : ''}<button class="trashBtn" data-delete-inventory="${i}" type="button" title="Delete item" aria-label="Delete ${esc(obj.name || "item")}">${trashIcon()}</button></div>${itemSpecialDetails(obj)}</td><td><input class="inventory-slots" data-inventory-slots="${i}" type="number" min="0" value="${esc(obj.slots ?? 0)}"></td><td class="source">${esc(obj.source ?? "")}</td></tr>`;
   }).join("");
   const magnificentRows = (model.magnificentItems ?? []).map((item, i) => {
     const traits = (item.traits ?? []).map((trait, j) => `<div class="trait-edit"><input data-mag-trait-name="${i}:${j}" value="${esc(trait.name ?? "")}" placeholder="[trait]"><input data-mag-trait-text="${i}:${j}" value="${esc(trait.text ?? "")}" placeholder="Trait description"><button class="trashBtn traitTrashBtn" data-delete-trait="${i}:${j}" type="button" title="Remove trait" aria-label="Remove trait ${esc(trait.name || "trait")}">${trashIcon()}</button></div>`).join("");
@@ -288,7 +302,7 @@ function renderRollPanel() {
 }
 
 function render() {
-  app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>POPPED-OUT CHARACTER SHEET</span></div></div><div class="status">${esc(statusText)}</div></header><main class="popout-main"><section class="identity hero-card"><div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div><div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div><div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${tokenImageUrl ? `<img src="${esc(tokenImageUrl)}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div></section>${renderWorkspace()}<div class="popout-actions"><button id="saveBtn" ${connected ? "" : "disabled"}>Save Character</button><button id="reloadBtn" class="secondary">Reload from Owlbear</button></div><div class="extension-version">Land of Eem · v0.4.0</div></main>`;
+  app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>POPPED-OUT CHARACTER SHEET</span></div></div><div class="status">${esc(statusText)}</div></header><main class="popout-main"><section class="identity hero-card"><div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div><div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div><div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${tokenImageUrl ? `<img src="${esc(tokenImageUrl)}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div></section>${renderWorkspace()}<div class="popout-actions"><button id="builderOpenBtn" type="button">Character Builder ↗</button><button id="saveBtn" ${connected ? "" : "disabled"}>Save Character</button><button id="reloadBtn" class="secondary">Reload from Owlbear</button></div><div class="extension-version">Land of Eem · v0.4.1</div></main>`;
   bind();
 }
 
@@ -396,6 +410,7 @@ function bind() {
   document.querySelectorAll("[data-mag-trait-name],[data-mag-trait-text],[data-mag-type],[data-mag-cost]").forEach(el => el.addEventListener("change", () => updateEquipmentStats()));
   document.querySelectorAll("[data-ability-used]").forEach(el => el.addEventListener("change", () => { readForm(); el.closest(".ability-entry")?.classList.toggle("ability-spent", el.checked); }));
   document.querySelector("#saveBtn")?.addEventListener("click", saveCharacter);
+  document.querySelector("#builderOpenBtn")?.addEventListener("click", openCharacterBuilder);
   document.querySelector("#reloadBtn")?.addEventListener("click", loadCharacter);
   document.querySelectorAll("[data-tab]").forEach(btn => btn.addEventListener("click", () => { readForm(); activeTab = btn.dataset.tab; render(); }));
   document.querySelector("#addInventoryBtn")?.addEventListener("click", () => { readForm(); model.inventory.push({name:"New item",slots:0,worn:false,type:"",cost:"",source:"Manual"}); render(); });
@@ -405,6 +420,45 @@ function bind() {
   document.querySelectorAll("[data-delete-magnificent]").forEach(btn => btn.addEventListener("click", () => { readForm(); const i = Number(btn.dataset.deleteMagnificent); const name = model.magnificentItems[i]?.name || "this Magnificent item"; if (window.confirm(`Delete ${name}?`)) { model.magnificentItems.splice(i, 1); if (model.equipmentBase) recalculateEquipmentStats(model); render(); } }));
   document.querySelectorAll("[data-delete-trait]").forEach(btn => btn.addEventListener("click", () => { readForm(); const [i, j] = btn.dataset.deleteTrait.split(":").map(Number); model.magnificentItems[i]?.traits?.splice(j, 1); if (model.equipmentBase) recalculateEquipmentStats(model); render(); }));
 }
+
+
+const BUILDER_CHANNEL = "eem-unified-builder-v1";
+let builderWindow = null;
+function openCharacterBuilder() {
+  if (!connected || !tokenId) { statusText = "Connect a character token first."; render(); return; }
+  readForm();
+  const url = new URL("./builder.html", location.href);
+  url.searchParams.set("owlbear", "1");
+  builderWindow = window.open(url.href, `eem-builder-${tokenId}`, "popup=yes,width=1120,height=900,resizable=yes,scrollbars=yes");
+  if (!builderWindow) { statusText = "Allow pop-ups to open the character builder."; render(); }
+  else builderWindow.focus();
+}
+window.addEventListener("message", async event => {
+  if (event.origin !== location.origin || event.source !== builderWindow || event.data?.channel !== BUILDER_CHANNEL) return;
+  if (event.data.type === "ready") {
+    const raw = source;
+    const state = raw?.format === "eem-builder" ? (raw.character || raw.state || raw) : raw?.state || raw?.character || (raw?.attrs ? raw : null);
+    event.source.postMessage({channel:BUILDER_CHANNEL,type:"init",state},event.origin);
+  } else if (event.data.type === "save") {
+    try {
+      const state = event.data.state;
+      if (!state || typeof state !== "object" || Array.isArray(state)) throw Error("Invalid builder data");
+      const { extractCharacter } = await import("./extract.js");
+      const updated = normalizeModelSheet(extractCharacter(state));
+      updated.journal = model.journal || "";
+      updated.addedAttributes = model.addedAttributes || [];
+      updated.abilityUsage = model.abilityUsage || {};
+      const newSource = {format:"eem-builder",character:state};
+      const payload = {version:9,updatedAt:new Date().toISOString(),sheet:updated,source:newSource};
+      const result = await request("popout-save",{payload});
+      if (!result.ok) throw Error(result.error || "Could not save to token");
+      source = newSource; model = updated; statusText = "Builder saved to Owlbear token."; render();
+      event.source.postMessage({channel:BUILDER_CHANNEL,type:"saved",ok:true},event.origin);
+    } catch(error) {
+      event.source.postMessage({channel:BUILDER_CHANNEL,type:"saved",ok:false,error:String(error?.message || error)},event.origin);
+    }
+  }
+});
 
 render();
 loadCharacter();

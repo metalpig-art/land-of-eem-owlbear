@@ -1,3 +1,9 @@
+## v0.4.1 — Inventory special rules and pop-out builder
+
+- Displays available item special descriptions indented below standard inventory items, including the Buckler blocking rule.
+- Adds Character Builder button to the detached character sheet, saving changes through its existing Owlbear token connection.
+- The embedded sheet and standalone builder remain available.
+
 ## v0.4.0 — Shared character builder (initial integration)
 
 - The original Offline v24 seven-step builder is bundled as `builder.html` and opens from the Owlbear sheet using **Character Builder**.

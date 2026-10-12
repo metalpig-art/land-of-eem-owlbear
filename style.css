@@ -135,3 +135,7 @@ body:not(.popout-body) .actions button {
 .add-attribute-toggle:focus-visible{outline:2px solid #3b5039;outline-offset:2px}
 
 .builder-open-button{font-size:12px;white-space:nowrap;background:#f1dfb3;border:1px solid #ad802f;color:#283e32;border-radius:5px;padding:6px 8px;cursor:pointer}
+
+/* v0.4.1: Indented inventory special rules */
+.inventory-item-details{margin:3px 0 4px 14px;padding-left:8px;border-left:2px solid #d4b77e;color:#66543b;font-size:11px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}
+.inventory-item-details>div+div{margin-top:2px}
