@@ -133,3 +133,5 @@ body:not(.popout-body) .actions button {
 .add-attribute-toggle:hover{background:#e9d4ad}
 .add-attribute-details[open] .add-attribute-toggle{margin-bottom:10px}
 .add-attribute-toggle:focus-visible{outline:2px solid #3b5039;outline-offset:2px}
+
+.builder-open-button{font-size:12px;white-space:nowrap;background:#f1dfb3;border:1px solid #ad802f;color:#283e32;border-radius:5px;padding:6px 8px;cursor:pointer}

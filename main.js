@@ -397,7 +397,7 @@ function render(message = "") {
   const tokenOptions = tokens.map(t => `<option value="${esc(t.id)}" ${t.id === selectedTokenId ? "selected" : ""}>${esc(tokenName(t))}</option>`).join("");
   app.innerHTML = `<header>
     <div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>OWLBEAR CHARACTER SHEET</span></div></div>
-    <div id="status" class="status">${esc(message)}</div><button id="broadcastSettingsBtn" class="broadcast-settings-button" type="button" aria-expanded="${rollSettingsOpen}">⚙ Broadcast settings</button>${gmAllowed ? `<button id="gmToggleBtn" class="gm-toggle" type="button">GM Page</button>` : ""}
+    <div id="status" class="status">${esc(message)}</div><button id="builderOpenBtn" type="button" class="builder-open-button">Character Builder ↗</button><button id="broadcastSettingsBtn" class="broadcast-settings-button" type="button" aria-expanded="${rollSettingsOpen}">⚙ Broadcast settings</button>${gmAllowed ? `<button id="gmToggleBtn" class="gm-toggle" type="button">GM Page</button>` : ""}
   </header><main>
     ${renderRollSettings()}
     <section class="utility-row">
@@ -410,7 +410,7 @@ function render(message = "") {
       <div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${portraitSource() ? `<img src="${esc(portraitSource())}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div>
     </section>
     ${renderWorkspace()}
-    <div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div><div class="extension-version">Land of Eem · v0.3.5.13</div>
+    <div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div><div class="extension-version">Land of Eem · v0.4.0</div>
   </main>`;
   bind();
 }
@@ -498,6 +498,47 @@ window.addEventListener("message", async event => {
   }
 });
 
+const BUILDER_CHANNEL = 'eem-unified-builder-v1';
+let builderWindow = null;
+function openCharacterBuilder() {
+  readForm();
+  if (!selectedTokenId) { render('Choose a Character-layer token before opening the builder.'); return; }
+  const url = new URL('./builder.html', location.href);
+  url.searchParams.set('owlbear','1');
+  builderWindow = window.open(url.href, `eem-builder-${selectedTokenId}`, 'popup=yes,width=1120,height=900,resizable=yes,scrollbars=yes');
+  if (!builderWindow) { render('Allow pop-ups for this site to open the character builder.'); return; }
+  builderWindow.focus();
+}
+window.addEventListener('message', async event => {
+  if (event.origin !== location.origin || event.source !== builderWindow || event.data?.channel !== BUILDER_CHANNEL) return;
+  const msg = event.data;
+  if (msg.type === 'ready') {
+    const item=sceneItems.find(i=>i.id===selectedTokenId);
+    const raw=item?.metadata?.[META_KEY]?.source;
+    const state=raw?.format==='eem-builder' ? (raw.character || raw.state) : raw?.state || raw?.character || (raw?.attrs ? raw : null);
+    event.source.postMessage({channel:BUILDER_CHANNEL,type:'init',state},event.origin);
+  } else if (msg.type === 'save') {
+    try {
+      if (!selectedTokenId) throw Error('No token selected');
+      const state=msg.state;
+      if (!state || typeof state!=='object' || Array.isArray(state)) throw Error('Invalid character data');
+      const existing=sceneItems.find(i=>i.id===selectedTokenId)?.metadata?.[META_KEY];
+      const updated=normalizeModelSheet(extractCharacter(state));
+      // Keep journal, custom additions and used ability tracking where possible.
+      if(existing?.sheet){
+        updated.journal=existing.sheet.journal||'';
+        updated.addedAttributes=existing.sheet.addedAttributes||[];
+        const old=existing.sheet.abilityUsed || {};
+        updated.abilityUsed=old;
+      }
+      const payload={version:9,updatedAt:new Date().toISOString(),sheet:updated,source:{format:'eem-builder',character:state}};
+      await OBR.scene.items.updateItems([selectedTokenId],items=>{for(const item of items)item.metadata[META_KEY]=payload;});
+      currentRaw=payload.source;model=updated;render('Character builder saved to token.');
+      event.source.postMessage({channel:BUILDER_CHANNEL,type:'saved',ok:true},event.origin);
+    } catch(error){event.source.postMessage({channel:BUILDER_CHANNEL,type:'saved',ok:false,error:String(error?.message||error)},event.origin);}
+  }
+});
+
 function popOutCharacter() {
   readForm();
   if (!selectedTokenId) { render("Choose a Character token first, then save it before popping out."); return; }
@@ -568,6 +609,7 @@ function bind() {
   document.querySelectorAll("[data-ability-used]").forEach(el => el.addEventListener("change", () => { readForm(); el.closest(".ability-entry")?.classList.toggle("ability-spent", el.checked); }));
   document.querySelector("#saveBtn")?.addEventListener("click", saveToToken);
   document.querySelector("#popOutBtn")?.addEventListener("click", popOutCharacter);
+  document.querySelector("#builderOpenBtn")?.addEventListener("click", openCharacterBuilder);
   document.querySelector("#exportBtn")?.addEventListener("click", downloadJson);
   document.querySelectorAll("[data-tab]").forEach(btn => btn.addEventListener("click", () => { readForm(); activeTab = btn.dataset.tab; render(); }));
   document.querySelector("#addInventoryBtn")?.addEventListener("click", () => { readForm(); model.inventory.push({name:"New item",slots:0,worn:false,type:"",cost:"",source:"Manual"}); render(); });

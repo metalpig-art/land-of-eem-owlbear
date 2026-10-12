@@ -1,3 +1,11 @@
+## v0.4.0 — Shared character builder (initial integration)
+
+- The original Offline v24 seven-step builder is bundled as `builder.html` and opens from the Owlbear sheet using **Character Builder**.
+- Builder loads a previously saved builder draft from the selected token and **Save to Owlbear token** writes changes to the existing token metadata, refreshing the character sheet.
+- The identical builder is shipped separately as `standalone/index.html`; it works without Owlbear.
+- Existing token sheets and GM tools remain available. The Owlbear builder button requires a Character-layer token selection.
+- **Limitations:** Builder and Owlbear must be hosted at the same origin for direct integration; a token with only an imported sheet (no original builder source) opens a new builder draft. Manual sheet-only edits do not automatically reverse-sync to builder state. Test multiplayer and pop-out behavior before replacing a live deployment.
+
 ## v0.3.5.13 - Collapsible Add Attribute
 
 - Replaces the always-visible attribute entry fields with a compact + Add Attribute control.
