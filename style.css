@@ -139,3 +139,26 @@ body:not(.popout-body) .actions button {
 /* v0.4.1: Indented inventory special rules */
 .inventory-item-details{margin:3px 0 4px 14px;padding-left:8px;border-left:2px solid #d4b77e;color:#66543b;font-size:11px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}
 .inventory-item-details>div+div{margin-top:2px}
+
+/* v0.4.2 - Inventory capacity and encumbrance */
+.inventory-capacity{display:flex;align-items:center;gap:14px;justify-content:space-between;border:2px solid #a48d61;background:#fff8ed;color:#294c38;padding:10px 14px;margin-bottom:0;border-radius:4px}
+.inventory-capacity-count{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.inventory-capacity-count strong{font:900 28px/1.1 Arial,sans-serif;font-variant-numeric:tabular-nums}
+.inventory-capacity-count span,.capacity-ok{font:700 12px Arial,sans-serif}
+.inventory-capacity.is-encumbered{background:#9f2225;border-color:#710f15;color:white}
+.inventory-capacity.is-encumbered .inventory-capacity-count strong{font-size:34px}
+.encumbered-alert{font:900 17px Arial,sans-serif;letter-spacing:.05em}
+.inventory-capacity-info{background:#f6eddd;color:#645239;border:1px solid #d6bc8a;border-top:0;padding:8px 12px;font:12px/1.5 Arial,sans-serif;margin-bottom:12px}
+@media(max-width:500px){.inventory-capacity{align-items:flex-start;flex-direction:column;gap:5px}.inventory-capacity-count strong{font-size:24px}}
+
+/* v0.4.3 compact inventory header and SRD Overburdened condition */
+.inventory-page .inventory-summary{display:flex;align-items:center;gap:14px;margin-bottom:0;flex-wrap:wrap}
+.inventory-page .inventory-summary>strong{font-size:17px}
+.inventory-page .inventory-summary>span{flex:1;min-width:130px;font-size:10px}
+.inventory-page .inventory-capacity{display:block;flex:none;border:0;background:transparent;color:white;padding:0;margin:0;border-radius:0}
+.inventory-page .inventory-capacity strong{font-size:13px;white-space:nowrap}
+.inventory-explanation{padding:5px 10px;font:11px/1.4 Arial,sans-serif;color:#765d34;background:#fff3df}
+.overburdened-warning{background:#a0090b;color:#fff;padding:9px 12px;display:flex;align-items:center;gap:14px;font:12px/1.4 Arial,sans-serif}
+.overburdened-warning[hidden]{display:none!important}
+.overburdened-warning strong{font-size:16px;white-space:nowrap}
+@media(max-width:500px){.overburdened-warning{align-items:flex-start;flex-direction:column;gap:4px}}

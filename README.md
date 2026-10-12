@@ -1,4 +1,11 @@
-## v0.4.1 — Inventory special rules and pop-out builder
+## v0.4.3 - Compact inventory and Overburdened rules
+
+- Compact slot count inside the gold Inventory header.
+- Red Overburdened warning appears only when capacity is exceeded, with the Core Rulebook condition penalties.
+- Every five zero-slot items count as one inventory slot.
+- Both embedded and pop-out sheets updated.
+
+## v0.4.2 - Inventory slots and encumbrance\n\n- Displays used / available inventory slots at the top of Inventory in embedded and pop-out sheets.\n- Counts both worn and carried items, including magnificent items.\n- Turns the counter large and red with ENCUMBERED when used slots exceed capacity.\n- Explains the counter immediately below it. Slot totals update as item slot values are edited.\n\n## v0.4.1 — Inventory special rules and pop-out builder
 
 - Displays available item special descriptions indented below standard inventory items, including the Buckler blocking rule.
 - Adds Character Builder button to the detached character sheet, saving changes through its existing Owlbear token connection.

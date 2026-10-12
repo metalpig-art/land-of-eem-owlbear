@@ -114,6 +114,35 @@ function itemSpecialDetails(item) {
   return lines.length ? `<div class="inventory-item-details">${lines.map(line => `<div>${esc(line)}</div>`).join("")}</div>` : "";
 }
 
+function slotUsage(items) {
+  let used = 0, zeroCount = 0;
+  for (const item of items) {
+    const slots = Math.max(0, Number(item?.slots ?? 0) || 0);
+    if (slots === 0) zeroCount++;
+    else used += slots;
+  }
+  return used + Math.floor(zeroCount / 5);
+}
+function inventoryCapacity() {
+  const items = [...(model.inventory || []), ...(model.magnificentItems || [])];
+  const used = slotUsage(items);
+  const capacity = Math.max(0, Number(model.inventorySlots) || 0);
+  return { used, capacity, overburdened: used > capacity };
+}
+function inventoryCapacityHeader() {
+  const {used, capacity, overburdened} = inventoryCapacity();
+  return `<div class="inventory-capacity" id="inventoryCapacity"><strong>${used}/${capacity} slots</strong></div>`;
+}
+function updateInventoryCapacityDisplay() {
+  const el = document.querySelector("#inventoryCapacity");
+  const warning = document.querySelector("#overburdenedWarning");
+  if (!el || !warning) return;
+  const inputs = [...document.querySelectorAll("[data-inventory-slots],[data-mag-slots]")];
+  const used = slotUsage(inputs.map(input => ({slots: input.value})));
+  const capacity = Math.max(0, Number(model.inventorySlots) || 0);
+  el.innerHTML = `<strong>${used}/${capacity} slots</strong>`;
+  warning.hidden = used <= capacity;
+}
 function inventoryRows() {
   const normalRows = (model.inventory ?? []).map((item, i) => {
     const obj = typeof item === "string" ? { name:item, slots:0, worn:false, source:"" } : item;
@@ -127,7 +156,7 @@ function inventoryRows() {
 }
 
 function renderTab() {
-  if (activeTab === "inventory") return `<section class="tab-page inventory-page"><div class="inventory-summary"><strong>INVENTORY</strong><span>Capacity ${esc(model.inventorySlots)} slots</span><span>Checked items are equipped/worn; unchecked items are carried.</span></div><table class="inventory-table"><thead><tr><th>Equip</th><th>Item</th><th>Slots</th><th>Source</th></tr></thead><tbody>${inventoryRows()}</tbody></table><div class="inventory-buttons"><button id="addInventoryBtn" class="smallBtn">+ Add item</button><button id="addMagnificentBtn" class="smallBtn secondary">+ Add Magnificent item</button></div></section>`;
+  if (activeTab === "inventory") return `<section class="tab-page inventory-page"><div class="inventory-summary"><strong>INVENTORY</strong>${inventoryCapacityHeader()}<span>Checked items are equipped/worn; unchecked items are carried.</span></div><div class="inventory-explanation">Slots used / available. Every five 0-slot items count as one slot. Exceeding capacity causes Overburdened.</div><div class="overburdened-warning" id="overburdenedWarning" ${inventoryCapacity().overburdened ? "" : "hidden"}><strong>OVERBURDENED</strong><span>+1 Defense; Disadvantage on Movement and Travel Checks. After more than 1 Travel Turn, become Tired.</span></div><table class="inventory-table"><thead><tr><th>Equip</th><th>Item</th><th>Slots</th><th>Source</th></tr></thead><tbody>${inventoryRows()}</tbody></table><div class="inventory-buttons"><button id="addInventoryBtn" class="smallBtn">+ Add item</button><button id="addMagnificentBtn" class="smallBtn secondary">+ Add Magnificent item</button></div></section>`;
   if (activeTab === "background") return `<section class="tab-page background-page"><div class="background-grid"><label>Ideals<textarea data-field="ideals">${esc(model.ideals)}</textarea></label><label>Flaws<textarea data-field="flaws">${esc(model.flaws)}</textarea></label><label>Personal Quest<textarea data-field="personalQuest">${esc(model.personalQuest)}</textarea></label><label>Backstory<textarea data-field="backstory">${esc(model.backstory)}</textarea></label><label class="wide">Relationships<textarea data-field="relationships">${esc(model.relationships)}</textarea></label><label>Ally<input data-field="ally" value="${esc(model.ally)}"></label><label>Rival<input data-field="rival" value="${esc(model.rival)}"></label><label>Second Rival<input data-field="secondRival" value="${esc(model.secondRival)}"></label><label class="wide">Notes<textarea data-field="notes">${esc(model.notes)}</textarea></label></div></section>`;
   if (activeTab === "journal") return `<section class="tab-page journal-page"><label>Journal<textarea class="journal-textarea" data-field="journal" placeholder="Session notes, clues, NPCs, plans, treasure, promises…">${esc(model.journal)}</textarea></label></section>`;
   return `<section class="tab-page attributes-page"><div class="two-col-features">${featureList("Proficiencies", model.proficiencies, "No proficiencies")}${featureList("Deficiencies", model.deficiencies, "No deficiencies")}</div>${featureList("Racial Traits", model.racialTraits, "No racial traits")}${featureList("Class Perks", displayedClassPerks(), "No class perks")}${featureList("Abilities", model.abilities, "No abilities")}${addAttributeForm()}</section>`;
@@ -302,7 +331,7 @@ function renderRollPanel() {
 }
 
 function render() {
-  app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>POPPED-OUT CHARACTER SHEET</span></div></div><div class="status">${esc(statusText)}</div></header><main class="popout-main"><section class="identity hero-card"><div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div><div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div><div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${tokenImageUrl ? `<img src="${esc(tokenImageUrl)}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div></section>${renderWorkspace()}<div class="popout-actions"><button id="builderOpenBtn" type="button">Character Builder ↗</button><button id="saveBtn" ${connected ? "" : "disabled"}>Save Character</button><button id="reloadBtn" class="secondary">Reload from Owlbear</button></div><div class="extension-version">Land of Eem · v0.4.1</div></main>`;
+  app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>POPPED-OUT CHARACTER SHEET</span></div></div><div class="status">${esc(statusText)}</div></header><main class="popout-main"><section class="identity hero-card"><div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div><div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div><div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${tokenImageUrl ? `<img src="${esc(tokenImageUrl)}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div></section>${renderWorkspace()}<div class="popout-actions"><button id="builderOpenBtn" type="button">Character Builder ↗</button><button id="saveBtn" ${connected ? "" : "disabled"}>Save Character</button><button id="reloadBtn" class="secondary">Reload from Owlbear</button></div><div class="extension-version">Land of Eem · v0.4.3</div></main>`;
   bind();
 }
 
@@ -399,6 +428,9 @@ function bindAddedAttributes() {
 }
 
 function bind() {
+  document.querySelectorAll("[data-inventory-slots],[data-mag-slots]").forEach(input =>
+    input.addEventListener("input", updateInventoryCapacityDisplay));
+
   bindAddedAttributes();
   document.querySelectorAll("[data-roll-skill]").forEach(btn => btn.addEventListener("click", () => openSkillRoll(btn.dataset.rollSkill)));
   document.querySelectorAll("[data-roll-attribute]").forEach(btn => btn.addEventListener("click", () => openAttributeRoll(btn.dataset.rollAttribute)));
