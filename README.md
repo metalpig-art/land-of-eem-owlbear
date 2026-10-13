@@ -1,3 +1,12 @@
+## v0.4.4 - Searchable item catalog
+
+- Add Item and Add Magnificent Item now open a searchable picker using the Offline v24 400-item table.
+- Automatically fills slots, item type, cost, and supported special rules (including Buckler).
+- Magnificent items show type-compatible traits and descriptions.
+- Supports custom items and preserves editing and deletion.
+- Inventory capacity and equipped bonuses continue to update.
+- The standalone builder retains its existing item catalog; the same catalog data is now included as a reusable JS module for Owlbear.
+
 ## v0.4.3 - Compact inventory and Overburdened rules
 
 - Compact slot count inside the gold Inventory header.

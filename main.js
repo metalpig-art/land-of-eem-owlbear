@@ -1,3 +1,4 @@
+import { ITEMS, TRAITS, traitGroup, specialRules } from "./item-catalog.js";
 import { createGMPanel } from "./gm.js";
 import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
 import { extractCharacter, ATTRIBUTE_GROUPS } from "./extract.js";
@@ -12,6 +13,7 @@ let sceneItems = [];
 let selectedTokenId = "";
 let currentRaw = null;
 let activeTab = "attributes";
+let itemPicker = null;
 let rollPrompt = null;
 let rollResult = null;
 let model = emptyModel();
@@ -155,6 +157,80 @@ function updateInventoryCapacityDisplay() {
   el.innerHTML = `<strong>${used}/${capacity} slots</strong>`;
   warning.hidden = used <= capacity;
 }
+function itemPickerHTML() {
+  if (!itemPicker) return "";
+  return `<div class="item-picker-backdrop"><section class="item-picker" role="dialog" aria-modal="true" aria-label="Choose equipment">
+    <div class="item-picker-head"><strong>${itemPicker.magnificent ? "Create Magnificent Item" : "Add Inventory Item"}</strong><button type="button" id="closeItemPicker" aria-label="Close">×</button></div>
+    <label>Search the 400-item equipment list<input id="itemPickerSearch" type="search" autocomplete="off" placeholder="Start typing, e.g. Buckler"></label>
+    <div class="item-picker-results" id="itemPickerResults"></div>
+    <div class="item-picker-choice" id="itemPickerChoice" hidden>
+      <strong id="itemPickerChosenName"></strong><div id="itemPickerDetails"></div>
+      <label>Slots<input id="itemPickerSlots" type="number" min="0" value="0"></label>
+      <label>Special rules<input id="itemPickerRules" placeholder="Rules or special functions"></label>
+      ${itemPicker.magnificent ? `<label>Magnificent trait<select id="itemPickerTrait"></select></label><p class="item-picker-trait-desc" id="itemPickerTraitDesc"></p>` : ""}
+      <button type="button" id="confirmItemPicker">+ Add to Inventory</button>
+    </div>
+    <button type="button" id="customItemPicker">+ Create custom item instead</button>
+  </section></div>`;
+}
+function bindItemPicker() {
+  if (!itemPicker) return;
+  const search = document.querySelector("#itemPickerSearch");
+  const results = document.querySelector("#itemPickerResults");
+  const choice = document.querySelector("#itemPickerChoice");
+  let selected = null;
+  const paintResults = () => {
+    const q = search.value.toLocaleLowerCase().trim();
+    const found = (q ? ITEMS.filter(x => x.name.toLocaleLowerCase().includes(q)) : ITEMS).slice(0,40);
+    results.innerHTML = found.map(x => `<button type="button" class="item-picker-result" data-catalog-id="${x.id}"><span>${esc(x.name)}</span><small>${x.slots == null ? "Bulky" : x.slots+" slots"} · ${esc(x.type)}</small></button>`).join("") || '<p>No matching items. Use Custom Item below.</p>';
+  };
+  const showSelected = item => {
+    selected = item;
+    choice.hidden = false;
+    document.querySelector("#itemPickerChosenName").textContent = item.name;
+    document.querySelector("#itemPickerDetails").textContent = `${item.type} · ${item.cost || "Cost varies"}${item.slots == null ? " · Bulky: GM approval required" : ""}`;
+    document.querySelector("#itemPickerSlots").value = item.slots ?? 0;
+    document.querySelector("#itemPickerRules").value = specialRules(item);
+    const traitSelect = document.querySelector("#itemPickerTrait");
+    if (traitSelect) {
+      const options = TRAITS[traitGroup(item.type)] || [];
+      traitSelect.innerHTML = `<option value="">Choose trait...</option>`+options.map((t,i)=>`<option value="${i}">${esc(t.name)}</option>`).join("");
+      document.querySelector("#itemPickerTraitDesc").textContent = "";
+    }
+  };
+  paintResults();
+  search.addEventListener("input", paintResults);
+  results.addEventListener("click", event => {
+    const btn=event.target.closest("[data-catalog-id]");if(!btn)return;
+    const found=ITEMS.find(x=>x.id===Number(btn.dataset.catalogId));if(found)showSelected(found);
+  });
+  document.querySelector("#itemPickerTrait")?.addEventListener("change",event=>{
+    const t=(TRAITS[traitGroup(selected?.type)]||[])[Number(event.target.value)];
+    document.querySelector("#itemPickerTraitDesc").textContent = event.target.value==="" ? "" : t?.text || "";
+  });
+  document.querySelector("#closeItemPicker").addEventListener("click",()=>{itemPicker=null;render();});
+  document.querySelector("#customItemPicker").addEventListener("click",()=>{
+    readForm();
+    if(itemPicker.magnificent)model.magnificentItems.push({name:"Magnificent Item",slots:0,worn:false,type:"",cost:"",source:"Custom",magnificent:true,traits:[]});
+    else model.inventory.push({name:"New item",slots:0,worn:false,type:"",cost:"",source:"Custom"});
+    itemPicker=null;render();
+  });
+  document.querySelector("#confirmItemPicker").addEventListener("click",()=>{
+    if(!selected)return;
+    readForm();
+    const rules=document.querySelector("#itemPickerRules").value.trim();
+    const slots=Math.max(0,Number(document.querySelector("#itemPickerSlots").value)||0);
+    const base={name:selected.name,slots,worn:false,type:selected.type,cost:selected.cost,source:"Mundane Items",description:rules};
+    if(itemPicker.magnificent){
+      const value=document.querySelector("#itemPickerTrait").value;
+      const t=value===""?null:(TRAITS[traitGroup(selected.type)]||[])[Number(value)];
+      model.magnificentItems.push({...base,name:`Magnificent ${selected.name}`,source:"Magnificent Items",magnificent:true,classGranted:false,traits:t?[{name:t.name,text:t.text}]:[]});
+    } else model.inventory.push(base);
+    if(model.equipmentBase)recalculateEquipmentStats(model);
+    itemPicker=null;render();
+  });
+}
+
 function inventoryRows() {
   const normalRows = (model.inventory ?? []).map((item, i) => {
     const obj = typeof item === "string" ? { name:item, slots:0, worn:false, source:"" } : item;
@@ -453,8 +529,9 @@ function render(message = "") {
       <div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${portraitSource() ? `<img src="${esc(portraitSource())}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div>
     </section>
     ${renderWorkspace()}
-    <div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div><div class="extension-version">Land of Eem · v0.4.3</div>
+    <div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div><div class="extension-version">Land of Eem · v0.4.4</div>
   </main>`;
+  app.insertAdjacentHTML("beforeend", itemPickerHTML());
   bind();
 }
 
@@ -622,6 +699,7 @@ function bindAddedAttributes() {
 }
 
 function bind() {
+  bindItemPicker();
   document.querySelectorAll("[data-inventory-slots],[data-mag-slots]").forEach(input =>
     input.addEventListener("input", updateInventoryCapacityDisplay));
 
@@ -658,8 +736,8 @@ function bind() {
   document.querySelector("#builderOpenBtn")?.addEventListener("click", openCharacterBuilder);
   document.querySelector("#exportBtn")?.addEventListener("click", downloadJson);
   document.querySelectorAll("[data-tab]").forEach(btn => btn.addEventListener("click", () => { readForm(); activeTab = btn.dataset.tab; render(); }));
-  document.querySelector("#addInventoryBtn")?.addEventListener("click", () => { readForm(); model.inventory.push({name:"New item",slots:0,worn:false,type:"",cost:"",source:"Manual"}); render(); });
-  document.querySelector("#addMagnificentBtn")?.addEventListener("click", () => { readForm(); model.magnificentItems.push({name:"Magnificent Item",slots:0,worn:false,type:"",cost:"",source:"Acquired",magnificent:true,classGranted:false,traits:[{name:"[trait]",text:"Trait description"}]}); render(); });
+  document.querySelector("#addInventoryBtn")?.addEventListener("click", () => { readForm(); itemPicker = {magnificent:false}; render(); });
+  document.querySelector("#addMagnificentBtn")?.addEventListener("click", () => { readForm(); itemPicker = {magnificent:true}; render(); });
   document.querySelectorAll("[data-add-trait]").forEach(btn => btn.addEventListener("click", () => { readForm(); const i = Number(btn.dataset.addTrait); model.magnificentItems[i]?.traits.push({name:"[trait]",text:"Trait description"}); render(); }));
   document.querySelectorAll("[data-delete-inventory]").forEach(btn => btn.addEventListener("click", () => { readForm(); const i = Number(btn.dataset.deleteInventory); const item = model.inventory[i]; const name = typeof item === "string" ? item : item?.name || "this item"; if (window.confirm(`Delete ${name}?`)) { model.inventory.splice(i, 1); if (model.equipmentBase) recalculateEquipmentStats(model); render(); } }));
   document.querySelectorAll("[data-delete-magnificent]").forEach(btn => btn.addEventListener("click", () => { readForm(); const i = Number(btn.dataset.deleteMagnificent); const name = model.magnificentItems[i]?.name || "this Magnificent item"; if (window.confirm(`Delete ${name}?`)) { model.magnificentItems.splice(i, 1); if (model.equipmentBase) recalculateEquipmentStats(model); render(); } }));

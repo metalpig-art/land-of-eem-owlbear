@@ -162,3 +162,18 @@ body:not(.popout-body) .actions button {
 .overburdened-warning[hidden]{display:none!important}
 .overburdened-warning strong{font-size:16px;white-space:nowrap}
 @media(max-width:500px){.overburdened-warning{align-items:flex-start;flex-direction:column;gap:4px}}
+
+/* v0.4.4 searchable equipment picker */
+.item-picker-backdrop{position:fixed;inset:0;background:#1b1816a8;z-index:9999;display:flex;justify-content:center;align-items:center;padding:12px}
+.item-picker{width:min(520px,100%);max-height:90vh;overflow:auto;background:#fff8ed;border:2px solid #cf912c;border-radius:9px;padding:14px;color:#342b1b;box-shadow:0 10px 45px #0007;display:grid;gap:10px}
+.item-picker-head{display:flex;justify-content:space-between;align-items:center;color:#a46b13;font-size:17px}
+.item-picker-head button{font-size:23px;border:0;background:none;cursor:pointer}
+.item-picker label{display:grid;gap:3px;font-size:12px;font-weight:700}
+.item-picker input,.item-picker select{width:100%;box-sizing:border-box;padding:8px;border:1px solid #b99c72;border-radius:4px}
+.item-picker-results{max-height:190px;overflow-y:auto;border:1px solid #d6bd91;background:white}
+.item-picker-result{display:flex;justify-content:space-between;gap:10px;width:100%;padding:8px 10px;background:white;border:0;border-bottom:1px solid #eee0c9;color:#33291b;text-align:left;cursor:pointer}
+.item-picker-result:hover{background:#f8ebd1}.item-picker-result small{color:#796b57;text-align:right}
+.item-picker-choice{display:grid;gap:8px;border-top:2px solid #c9912f;padding-top:10px}
+.item-picker-choice[hidden]{display:none}.item-picker-trait-desc{font-size:12px;color:#65573e;margin:0}
+#confirmItemPicker{background:#294e3b;color:white;padding:9px;border:0;border-radius:4px;cursor:pointer}
+#customItemPicker{background:transparent;border:1px solid #bca073;padding:8px;cursor:pointer}

@@ -1,43 +1,13 @@
-OFFLINE BUILDER VERSION: 24
+LAND OF EEM OWLBEAR UPDATE v0.2.5
 
-LAND OF EEM CHARACTER BUILDER — OFFLINE EDITION
+This version adds progression-aware import for leveled characters, including the uploaded level 10 Knight-Errant format.
 
-1. Download this ZIP and extract/unzip it completely.
-2. Open the Land-of-Eem-Offline folder.
-3. Double-click index.html to open the builder in your browser.
-   If prompted, choose Microsoft Edge or Google Chrome.
+Upload everything in this folder over the existing files in your GitHub repository.
 
-No installation, account, local server, or internet connection is required.
-Character creation, editable story examples, Roll20 copy buttons, PDF preview,
-printing, and PDF download are included.
+After GitHub Pages finishes deploying, update Owlbear using:
+https://metalpig-art.github.io/land-of-eem-owlbear/manifest.json?v=025
 
-KEEP YOUR CHARACTER
-Use Save file to download an .eem.json character file. Use Load file to open
-it again. Browser autosave may depend on your browser and the location of
-index.html, so keep a character file as your backup before moving the builder.
-Each friend uses their own character files. Drafts are not shared or synced.
-Character files from the online builder work here, and vice versa.
+Fully close the Owlbear tab and reopen it after updating.
 
-OWLBEAR RODEO
-Open Sheet & Roll20 and click Export Owlbear JSON. In Blaze Sanecki’s Land of
-Eem extension, choose a save slot, click Import, and open the .owlbear.json file.
-Import replaces that slot. Keep your .eem.json Save file for editing here.
-Conditional equipment effects and fixed Dread bonuses need manual application
-in the extension. Current Courage is exported at maximum.
 
-PRINTING AND PDF
-Open Preview sheet, then choose Print or Download PDF.
-If your browser blocks a download, choose Open PDF and save from its viewer.
-The original sheet artwork is included. Long entries use continuation pages.
-PDF preparation can take a moment; wait for the download button to enable.
-
-SHARING
-Send this ZIP to your friends, including through OneDrive. Each person downloads
-and extracts their own copy. Open the extracted index.html, not a OneDrive
-preview or the file while it is still inside the ZIP.
-
-CREDITS
-Unofficial personal-use builder for Land of Eem by Ben Costa & James Parks.
-Includes the supplied character-sheet template and rule data.
-Third-party library and font notices are in the licenses folder.
-Updated October 7, 2026.
+v0.3.3: Embedded Owlbear sheet displays Vim, Vigor, Knack and Knowhow with their skills in a single four-column row. Detached pop-out layout unchanged.
