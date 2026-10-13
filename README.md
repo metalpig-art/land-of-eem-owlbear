@@ -1,3 +1,13 @@
+## v0.4.5 - Weapon rules and equipment picker controls
+
+- Hover or focus the weapon asterisk to see applicable general combat rules.
+- Wielded Greatswords and Two-Handed Swords apply the core two-handed melee +1 Dread bonus.
+- Added item-type filters to normal and Magnificent base-item catalog pickers, alongside name search.
+- Added Cancel / Back, Escape key, and backdrop dismissal to exit item pickers without adding anything.
+- Both embedded and pop-out sheets include the same changes.
+
+**Note:** General weapon rules are distinct from item-specific Magnificent Traits. Ranged distance penalties and dual-wielding remain contextual, not automatic roll modifiers.
+
 ## v0.4.4 - Searchable item catalog
 
 - Add Item and Add Magnificent Item now open a searchable picker using the Offline v24 400-item table.

@@ -83,6 +83,11 @@ function applyItem(item, stats) {
 
   const dreadBonus = parseSigned(text, "Dread");
   if (dreadBonus) stats.dreadBonus += dreadBonus;
+  // Apply the SRD's basic two-handed melee weapon bonus only while equipped.
+  // Do not double-count if an existing description already explicitly includes it.
+  if (isTwoHandedMeleeWeapon(item) && !/two.hand(?:ed)?[^.]{0,80}\+1\s*Dread/i.test(text)) {
+    stats.dreadBonus += 1;
+  }
   const upMatches = text.match(/Increase\s+Dread\s+by\s+one\s+die/gi) ?? [];
   const downMatches = text.match(/Decrease\s+Dread\s+by\s+one\s+die/gi) ?? [];
   stats.dreadDieSteps += upMatches.length - downMatches.length;
@@ -143,6 +148,30 @@ export function recalculateEquipmentStats(model, options = {}) {
   if (options.initial || previousMax === 0 || previousCurrent >= previousMax) model.courageCurrent = stats.courageMax;
   else model.courageCurrent = Math.min(previousCurrent, stats.courageMax);
   return model;
+}
+
+
+const WEAPON_TYPES = /Bladed|Blunt|Ranged|Polearm|Flexible|Weapon/i;
+
+/** Common weapon rules from the Land of Eem Core Rulebook, combat chapter. */
+export function weaponRuleTexts(item) {
+  const type = String(item?.type ?? "");
+  const name = String(item?.name ?? "").replace(/^Magnificent\s+/i, "").trim();
+  if (!WEAPON_TYPES.test(type)) return [];
+  const rules = [];
+  if (isTwoHandedMeleeWeapon(item)) rules.push("Two-handed melee weapon: +1 Dread while wielded.");
+  if (/Ranged/i.test(type)) rules.push("Ranged attacks have Disadvantage at Close and Distant range.");
+  if (/Thrown/i.test(type) || /\b(?:throwing\s+(?:axe|knife)|javelin|dart|boomerang)\b/i.test(name))
+    rules.push("Thrown attacks have Disadvantage at Faraway range and cannot be thrown at Distant range.");
+  if (/Bladed|Blunt|Polearm|Flexible/i.test(type)) rules.push("A melee weapon may be used in Close combat.");
+  return rules;
+}
+export function isTwoHandedMeleeWeapon(item) {
+  const name = String(item?.name ?? "").replace(/^Magnificent\s+/i, "").trim();
+  const type = String(item?.type ?? "");
+  if (!/Bladed|Blunt|Polearm|Flexible|Weapon/i.test(type)) return false;
+  // Explicit two-handed entries; do not infer solely from item size or slot count.
+  return /^(?:two[\s-]handed\s+sword|greatsword)$/i.test(name) || !!item?.twoHanded;
 }
 
 export function isWeaponItem(item) {

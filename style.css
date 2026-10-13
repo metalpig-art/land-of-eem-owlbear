@@ -177,3 +177,13 @@ body:not(.popout-body) .actions button {
 .item-picker-choice[hidden]{display:none}.item-picker-trait-desc{font-size:12px;color:#65573e;margin:0}
 #confirmItemPicker{background:#294e3b;color:white;padding:9px;border:0;border-radius:4px;cursor:pointer}
 #customItemPicker{background:transparent;border:1px solid #bca073;padding:8px;cursor:pointer}
+
+/* v0.4.5: item picker filters, accessible weapon rules and cancellation */
+.item-picker label select{width:100%;box-sizing:border-box;padding:8px;border:1px solid #c9a66b;border-radius:4px;background:#fff8ee;color:#49341a}
+.picker-footer{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:space-between;margin-top:10px}
+.picker-footer button{max-width:100%;min-height:32px}
+.weapon-rule-marker{position:relative;display:inline-flex;align-items:center;justify-content:center;cursor:help;font-weight:900;min-width:16px;min-height:20px;flex-shrink:0}
+.weapon-rule-marker:focus-visible{outline:2px solid #c7902b;outline-offset:2px}
+.weapon-rule-tooltip{display:none;position:absolute;z-index:100;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);width:max-content;max-width:min(330px,75vw);white-space:normal;padding:10px 12px;border:1px solid #bb8a31;border-radius:5px;background:#fff8eb;color:#4a3922;font-size:12px;line-height:1.4;font-weight:400;box-shadow:0 4px 18px #0003;text-align:left}
+.weapon-rule-tooltip span{display:block;margin:3px 0}
+.weapon-rule-marker:hover .weapon-rule-tooltip,.weapon-rule-marker:focus .weapon-rule-tooltip{display:block}

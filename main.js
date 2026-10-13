@@ -2,7 +2,7 @@ import { ITEMS, TRAITS, traitGroup, specialRules } from "./item-catalog.js";
 import { createGMPanel } from "./gm.js";
 import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
 import { extractCharacter, ATTRIBUTE_GROUPS } from "./extract.js";
-import { recalculateEquipmentStats, signedNumber, isWeaponItem } from "./equipment.js";
+import { recalculateEquipmentStats, signedNumber, isWeaponItem, weaponRuleTexts } from "./equipment.js";
 
 const EXT_ID = "com.metalpig.land-of-eem";
 const ROLL_CHANNEL = `${EXT_ID}/roll`;
@@ -161,6 +161,20 @@ function itemPickerHTML() {
   if (!itemPicker) return "";
   return `<div class="item-picker-backdrop"><section class="item-picker" role="dialog" aria-modal="true" aria-label="Choose equipment">
     <div class="item-picker-head"><strong>${itemPicker.magnificent ? "Create Magnificent Item" : "Add Inventory Item"}</strong><button type="button" id="closeItemPicker" aria-label="Close">×</button></div>
+    <label>Item type<select id="itemPickerCategory">
+       <option value="all">All item types</option>
+       <option value="weapons">Weapons (all)</option>
+       <option value="Bladed">Bladed weapons</option>
+       <option value="Blunt">Blunt weapons</option>
+       <option value="Ranged">Ranged weapons</option>
+       <option value="Polearm">Polearms</option>
+       <option value="Flexible">Flexible weapons</option>
+       <option value="armor">Armor and shields</option>
+       <option value="Tool">Tools</option>
+       <option value="Clothing">Clothing</option>
+       <option value="Trinket">Trinkets</option>
+       <option value="container">Containers</option>
+     </select></label>
     <label>Search the 400-item equipment list<input id="itemPickerSearch" type="search" autocomplete="off" placeholder="Start typing, e.g. Buckler"></label>
     <div class="item-picker-results" id="itemPickerResults"></div>
     <div class="item-picker-choice" id="itemPickerChoice" hidden>
@@ -170,25 +184,35 @@ function itemPickerHTML() {
       ${itemPicker.magnificent ? `<label>Magnificent trait<select id="itemPickerTrait"></select></label><p class="item-picker-trait-desc" id="itemPickerTraitDesc"></p>` : ""}
       <button type="button" id="confirmItemPicker">+ Add to Inventory</button>
     </div>
-    <button type="button" id="customItemPicker">+ Create custom item instead</button>
+    <div class="picker-footer"><button type="button" id="customItemPicker">+ Create custom item instead</button><button type="button" id="cancelItemPicker" class="secondary">Cancel / Back</button></div>
   </section></div>`;
 }
 function bindItemPicker() {
   if (!itemPicker) return;
   const search = document.querySelector("#itemPickerSearch");
   const results = document.querySelector("#itemPickerResults");
+  const category = document.querySelector("#itemPickerCategory");
   const choice = document.querySelector("#itemPickerChoice");
   let selected = null;
   const paintResults = () => {
     const q = search.value.toLocaleLowerCase().trim();
-    const found = (q ? ITEMS.filter(x => x.name.toLocaleLowerCase().includes(q)) : ITEMS).slice(0,40);
+    const matchType = item => {
+      const type = String(item.type || "").toLowerCase();
+      const choice = category.value.toLowerCase();
+      if (choice === "all") return true;
+      if (choice === "weapons") return /bladed|blunt|ranged|polearm|flexible/.test(type);
+      if (choice === "armor") return /armor|shield/.test(type);
+      if (choice === "container") return /container/.test(type);
+      return type.includes(choice);
+    };
+    const found = ITEMS.filter(x => matchType(x) && (!q || x.name.toLocaleLowerCase().includes(q))).slice(0,40);
     results.innerHTML = found.map(x => `<button type="button" class="item-picker-result" data-catalog-id="${x.id}"><span>${esc(x.name)}</span><small>${x.slots == null ? "Bulky" : x.slots+" slots"} · ${esc(x.type)}</small></button>`).join("") || '<p>No matching items. Use Custom Item below.</p>';
   };
   const showSelected = item => {
     selected = item;
     choice.hidden = false;
     document.querySelector("#itemPickerChosenName").textContent = item.name;
-    document.querySelector("#itemPickerDetails").textContent = `${item.type} · ${item.cost || "Cost varies"}${item.slots == null ? " · Bulky: GM approval required" : ""}`;
+    document.querySelector("#itemPickerDetails").textContent = `${item.type} · ${item.cost || "Cost varies"}${item.slots == null ? " · Bulky: GM approval required" : ""}${weaponRuleTexts(item).length ? " · " + weaponRuleTexts(item).join(" / ") : ""}`;
     document.querySelector("#itemPickerSlots").value = item.slots ?? 0;
     document.querySelector("#itemPickerRules").value = specialRules(item);
     const traitSelect = document.querySelector("#itemPickerTrait");
@@ -200,6 +224,7 @@ function bindItemPicker() {
   };
   paintResults();
   search.addEventListener("input", paintResults);
+  category.addEventListener("change", paintResults);
   results.addEventListener("click", event => {
     const btn=event.target.closest("[data-catalog-id]");if(!btn)return;
     const found=ITEMS.find(x=>x.id===Number(btn.dataset.catalogId));if(found)showSelected(found);
@@ -208,7 +233,15 @@ function bindItemPicker() {
     const t=(TRAITS[traitGroup(selected?.type)]||[])[Number(event.target.value)];
     document.querySelector("#itemPickerTraitDesc").textContent = event.target.value==="" ? "" : t?.text || "";
   });
-  document.querySelector("#closeItemPicker").addEventListener("click",()=>{itemPicker=null;render();});
+  const cancelPicker = () => { itemPicker=null; render(); };
+  document.querySelector("#closeItemPicker").addEventListener("click", cancelPicker);
+  document.querySelector("#cancelItemPicker").addEventListener("click", cancelPicker);
+  document.querySelector(".item-picker-backdrop")?.addEventListener("click", e => {
+    if (e.target.classList.contains("item-picker-backdrop")) cancelPicker();
+  });
+  document.querySelector(".item-picker")?.addEventListener("keydown", e => {
+    if (e.key === "Escape") { e.preventDefault(); cancelPicker(); }
+  });
   document.querySelector("#customItemPicker").addEventListener("click",()=>{
     readForm();
     if(itemPicker.magnificent)model.magnificentItems.push({name:"Magnificent Item",slots:0,worn:false,type:"",cost:"",source:"Custom",magnificent:true,traits:[]});
@@ -231,14 +264,21 @@ function bindItemPicker() {
   });
 }
 
+function weaponMarker(item) {
+  if (!isWeaponItem(item)) return "";
+  const rules = weaponRuleTexts(item);
+  const ruleText = rules.length ? rules.join(" · ") : "Weapon; no additional general modifier.";
+  return `<span class="item-marker weapon-rule-marker" tabindex="0" title="${esc(ruleText)}" aria-label="${esc(ruleText)}">*<span class="weapon-rule-tooltip">${rules.map(r => `<span>${esc(r)}</span>`).join("") || "Weapon"}</span></span>`;
+}
+
 function inventoryRows() {
   const normalRows = (model.inventory ?? []).map((item, i) => {
     const obj = typeof item === "string" ? { name:item, slots:0, worn:false, source:"" } : item;
-    return `<tr><td><input class="wear-check" data-inventory-worn="${i}" type="checkbox" ${obj.worn ? "checked" : ""}></td><td><div class="item-name-row"><input class="inventory-name" data-inventory-name="${i}" value="${esc(obj.name)}">${isWeaponItem(obj) ? '<span class="item-marker" title="Weapon">*</span>' : ''}<button class="trashBtn" data-delete-inventory="${i}" type="button" title="Delete item" aria-label="Delete ${esc(obj.name || "item")}">${trashIcon()}</button></div>${itemSpecialDetails(obj)}</td><td><input class="inventory-slots" data-inventory-slots="${i}" type="number" min="0" value="${esc(obj.slots ?? 0)}"></td><td class="source">${esc(obj.source ?? "")}</td></tr>`;
+    return `<tr><td><input class="wear-check" data-inventory-worn="${i}" type="checkbox" ${obj.worn ? "checked" : ""}></td><td><div class="item-name-row"><input class="inventory-name" data-inventory-name="${i}" value="${esc(obj.name)}">${weaponMarker(obj)}<button class="trashBtn" data-delete-inventory="${i}" type="button" title="Delete item" aria-label="Delete ${esc(obj.name || "item")}">${trashIcon()}</button></div>${itemSpecialDetails(obj)}</td><td><input class="inventory-slots" data-inventory-slots="${i}" type="number" min="0" value="${esc(obj.slots ?? 0)}"></td><td class="source">${esc(obj.source ?? "")}</td></tr>`;
   }).join("");
   const magnificentRows = (model.magnificentItems ?? []).map((item, i) => {
     const traits = (item.traits ?? []).map((trait, j) => `<div class="trait-edit"><input data-mag-trait-name="${i}:${j}" value="${esc(trait.name ?? "")}" placeholder="[trait]"><input data-mag-trait-text="${i}:${j}" value="${esc(trait.text ?? "")}" placeholder="Trait description"><button class="trashBtn traitTrashBtn" data-delete-trait="${i}:${j}" type="button" title="Remove trait" aria-label="Remove trait ${esc(trait.name || "trait")}">${trashIcon()}</button></div>`).join("");
-    return `<tr class="magnificent-row"><td><input class="wear-check" data-mag-worn="${i}" type="checkbox" ${item.worn ? "checked" : ""}></td><td><div class="item-name-row"><input class="inventory-name" data-mag-name="${i}" value="${esc(item.name ?? "Magnificent Item")}">${isWeaponItem(item) ? '<span class="item-marker" title="Weapon">*</span>' : ''}<button class="trashBtn" data-delete-magnificent="${i}" type="button" title="Delete item" aria-label="Delete ${esc(item.name || "Magnificent item")}">${trashIcon()}</button></div></td><td><input class="inventory-slots" data-mag-slots="${i}" type="number" min="0" value="${esc(item.slots ?? 0)}"></td><td class="source">${esc(item.source ?? "Acquired")}${item.classGranted ? " · Class perk" : ""}</td></tr><tr class="magnificent-detail"><td></td><td colspan="3"><div class="mag-meta"><input data-mag-type="${i}" value="${esc(item.type ?? "")}" placeholder="Type"><input data-mag-cost="${i}" value="${esc(item.cost ?? "")}" placeholder="Cost"></div>${traits}<button class="tinyBtn addTraitBtn" data-add-trait="${i}" type="button">+ Trait</button></td></tr>`;
+    return `<tr class="magnificent-row"><td><input class="wear-check" data-mag-worn="${i}" type="checkbox" ${item.worn ? "checked" : ""}></td><td><div class="item-name-row"><input class="inventory-name" data-mag-name="${i}" value="${esc(item.name ?? "Magnificent Item")}">${weaponMarker(item)}<button class="trashBtn" data-delete-magnificent="${i}" type="button" title="Delete item" aria-label="Delete ${esc(item.name || "Magnificent item")}">${trashIcon()}</button></div></td><td><input class="inventory-slots" data-mag-slots="${i}" type="number" min="0" value="${esc(item.slots ?? 0)}"></td><td class="source">${esc(item.source ?? "Acquired")}${item.classGranted ? " · Class perk" : ""}</td></tr><tr class="magnificent-detail"><td></td><td colspan="3"><div class="mag-meta"><input data-mag-type="${i}" value="${esc(item.type ?? "")}" placeholder="Type"><input data-mag-cost="${i}" value="${esc(item.cost ?? "")}" placeholder="Cost"></div>${traits}<button class="tinyBtn addTraitBtn" data-add-trait="${i}" type="button">+ Trait</button></td></tr>`;
   }).join("");
   return normalRows + magnificentRows;
 }
@@ -529,7 +569,7 @@ function render(message = "") {
       <div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${portraitSource() ? `<img src="${esc(portraitSource())}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div>
     </section>
     ${renderWorkspace()}
-    <div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div><div class="extension-version">Land of Eem · v0.4.4</div>
+    <div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div><div class="extension-version">Land of Eem · v0.4.5</div>
   </main>`;
   app.insertAdjacentHTML("beforeend", itemPickerHTML());
   bind();
