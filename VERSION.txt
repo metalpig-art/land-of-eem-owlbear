@@ -1,0 +1,7 @@
+Land of Eem Offline Character Builder
+Version: 24
+Released: October 7, 2026
+
+Each shared update receives a higher version number.
+Character .eem.json save files work across builder releases.
+Save your character before replacing or moving an extracted builder.
