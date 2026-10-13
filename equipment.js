@@ -171,9 +171,23 @@ export function isTwoHandedMeleeWeapon(item) {
   const type = String(item?.type ?? "");
   if (!/Bladed|Blunt|Polearm|Flexible|Weapon/i.test(type)) return false;
   // Explicit two-handed entries; do not infer solely from item size or slot count.
-  return /^(?:two[\s-]handed\s+sword|greatsword)$/i.test(name) || !!item?.twoHanded;
+  return item?.twoHanded === false ? false : (item?.twoHanded === true || /^(?:two[\s-]handed\s+sword|greatsword|greatclub)$/i.test(name) || (/Bladed|Blunt|Polearm|Flexible/i.test(type) && Number(item?.slots) >= 3));
 }
 
 export function isWeaponItem(item) {
   return /Bladed|Blunt|Ranged|Polearm|Flexible|Weapon/i.test(`${item?.type ?? ""} ${item?.source ?? ""}`);
+}
+
+export function weaponUseDescription(item) {
+  const type=String(item?.type ?? "");
+  const slots=Number(item?.slots);
+  const name=String(item?.name ?? "").replace(/^Magnificent\s+/i, "").trim();
+  if (!/Bladed|Blunt|Ranged|Polearm|Flexible|Weapon/i.test(type)) return [];
+  const rules=[];
+  if (/Ranged/i.test(type)) rules.push("Ranged weapon — ranged attacks have Disadvantage at Close and Distant range.");
+  else rules.push("Melee weapon — may be used in Close combat.");
+  if (/Thrown/i.test(type) || /\b(?:throwing\s+(?:axe|knife)|javelin|dart|boomerang)\b/i.test(name)) rules.push("Thrown attacks have Disadvantage at Faraway range and cannot be thrown at Distant range.");
+  if (isTwoHandedMeleeWeapon(item)) rules.push("Two-handed — +1 Dread while equipped.");
+  else if (!/Ranged/i.test(type)) rules.push(slots===1 ? "Light — generally one-handed (1 slot)." : slots===2 ? "Medium — generally one-handed (2 slots)." : "Weapon — check its handling with the GM.");
+  return rules;
 }

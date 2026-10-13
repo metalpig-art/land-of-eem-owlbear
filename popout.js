@@ -1,6 +1,6 @@
 import { ITEMS, TRAITS, traitGroup, specialRules } from "./item-catalog.js";
 import { ATTRIBUTE_GROUPS } from "./extract.js";
-import { recalculateEquipmentStats, signedNumber, isWeaponItem, weaponRuleTexts } from "./equipment.js";
+import { recalculateEquipmentStats, signedNumber, isWeaponItem, weaponRuleTexts, weaponUseDescription } from "./equipment.js";
 
 const EXT_ID = "com.metalpig.land-of-eem";
 const ROLL_CHANNEL = `${EXT_ID}/roll`;
@@ -166,7 +166,7 @@ function itemPickerHTML() {
     <label>Search the 400-item equipment list<input id="itemPickerSearch" type="search" autocomplete="off" placeholder="Start typing, e.g. Buckler"></label>
     <div class="item-picker-results" id="itemPickerResults"></div>
     <div class="item-picker-choice" id="itemPickerChoice" hidden>
-      <strong id="itemPickerChosenName"></strong><div id="itemPickerDetails"></div>
+      <strong id="itemPickerChosenName"></strong><div id="itemPickerDetails"></div><div class="item-picker-weapon-rules" id="itemPickerWeaponRules" aria-live="polite"></div>
       <label>Slots<input id="itemPickerSlots" type="number" min="0" value="0"></label>
       <label>Special rules<input id="itemPickerRules" placeholder="Rules or special functions"></label>
       ${itemPicker.magnificent ? `<label>Magnificent trait<select id="itemPickerTrait"></select></label><p class="item-picker-trait-desc" id="itemPickerTraitDesc"></p>` : ""}
@@ -201,6 +201,7 @@ function bindItemPicker() {
     choice.hidden = false;
     document.querySelector("#itemPickerChosenName").textContent = item.name;
     document.querySelector("#itemPickerDetails").textContent = `${item.type} · ${item.cost || "Cost varies"}${item.slots == null ? " · Bulky: GM approval required" : ""}${weaponRuleTexts(item).length ? " · " + weaponRuleTexts(item).join(" / ") : ""}`;
+    document.querySelector("#itemPickerWeaponRules").innerHTML = weaponUseDescription(item).map(rule => `<p>${esc(rule)}</p>`).join("");
     document.querySelector("#itemPickerSlots").value = item.slots ?? 0;
     document.querySelector("#itemPickerRules").value = specialRules(item);
     const traitSelect = document.querySelector("#itemPickerTrait");
@@ -447,7 +448,7 @@ function renderRollPanel() {
 }
 
 function render() {
-  app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>POPPED-OUT CHARACTER SHEET</span></div></div><div class="status">${esc(statusText)}</div></header><main class="popout-main"><section class="identity hero-card"><div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div><div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div><div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${tokenImageUrl ? `<img src="${esc(tokenImageUrl)}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div></section>${renderWorkspace()}<div class="popout-actions"><button id="builderOpenBtn" type="button">Character Builder ↗</button><button id="saveBtn" ${connected ? "" : "disabled"}>Save Character</button><button id="reloadBtn" class="secondary">Reload from Owlbear</button></div><div class="extension-version">Land of Eem · v0.4.5</div></main>`;
+  app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>POPPED-OUT CHARACTER SHEET</span></div></div><div class="status">${esc(statusText)}</div></header><main class="popout-main"><section class="identity hero-card"><div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div><div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div><div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${tokenImageUrl ? `<img src="${esc(tokenImageUrl)}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div></section>${renderWorkspace()}<div class="popout-actions"><button id="builderOpenBtn" type="button">Character Builder ↗</button><button id="saveBtn" ${connected ? "" : "disabled"}>Save Character</button><button id="reloadBtn" class="secondary">Reload from Owlbear</button></div><div class="extension-version">Land of Eem · v0.4.6</div></main>`;
   app.insertAdjacentHTML("beforeend", itemPickerHTML());
   bind();
 }

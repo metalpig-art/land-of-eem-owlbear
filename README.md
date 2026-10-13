@@ -1,3 +1,10 @@
+## v0.4.6 — Weapon selection guidance
+
+- Selected equipment shows its type, cost, and weapon use/handling details including two-handed +1 Dread.
+- Heavy (3+ slot) melee weapons are considered two-handed by default; ranged weapons are not given a two-handed melee Dread bonus.
+- Dread modifiers continue to apply only while the weapon is equipped.
+- Updated both regular and Magnificent base-item pickers.
+
 ## v0.4.5 - Weapon rules and equipment picker controls
 
 - Hover or focus the weapon asterisk to see applicable general combat rules.
