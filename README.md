@@ -1,3 +1,17 @@
+## v0.4.8 — Reliable roll broadcast and navigation
+
+- Send all sheet, GM, and pop-out rolls to all participants, including the roller, with a stable roll ID for deduplicating retries.
+- Report failed roll delivery rather than ignoring failures silently.
+- Add broadcast card position and duration settings to pop-out sheets, synced through the Owlbear bridge.
+- Add a clear Back to Character Builder button to the builder preview.
+- Hide the empty character sheet until a Character-layer token is selected.
+
+## v0.4.7 — Armor and shield item rules
+
+- Inventory and Magnificent item selection shows armor/shield rules.
+- Inventory displays light, medium, heavy, piecemeal, and shield rules under each item (including previously imported gear).
+- Passive Block bonuses remain tied to worn armor; shield Block is a limited-use action, not a permanent Block bonus.
+
 ## v0.4.6 — Weapon selection guidance
 
 - Selected equipment shows its type, cost, and weapon use/handling details including two-handed +1 Dread.

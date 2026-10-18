@@ -42,7 +42,11 @@ export function createGMPanel(OBR, channel, namespace) {
     const diceMath = dice.length>1?`(${dice.join(', ')} → ${chosen})`:`(${chosen})`;
     const text = `${a.name} — GM ${draft.counter?'Counterattack':'Attack'}\nAttack: ${total}  [${diceMath} ${sign(a.attack)} ${sign(target)} (Defense)]\nDread: ${dread} Dread  [${outcome==='Critical Hit'?'2 × ':''}(${die}) ${sign(a.bonus)}]\n${outcome}${dread>0?` for ${dread} Dread!`:''}`;
     lastRoll=text; draft=null;
-    try { await OBR.broadcast.sendMessage(channel,{type:'roll-result',text,id:id()},{destination:'REMOTE'}); } catch(e){ console.warn('GM broadcast failed',e); }
+    try {
+      const data = {type:'roll-result',text,id:id()};
+      try { await OBR.broadcast.sendMessage(channel,data,{destination:'ALL'}); }
+      catch(firstError) { console.warn('Retrying GM roll broadcast',firstError); await OBR.broadcast.sendMessage(channel,data,{destination:'ALL'}); }
+    } catch(e) { console.warn('GM broadcast failed',e); OBR.notification.show('GM roll shown locally but broadcast failed. Check connection.', 'WARNING').catch(()=>{}); }
     refresh();
   }
   let refresh = ()=>{};

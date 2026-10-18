@@ -191,3 +191,8 @@ body:not(.popout-body) .actions button {
 /* v0.4.6 item selection rules */
 .item-picker-weapon-rules{margin:6px 0 12px;border-left:3px solid #c78b28;padding-left:10px;font:12px/1.45 Arial,sans-serif;color:#59462c}
 .item-picker-weapon-rules p{margin:3px 0}
+
+/* v0.4.8: no misleading empty character sheet before selecting a token */
+.choose-character-state{border:2px dashed #d09a39;border-radius:8px;padding:28px 20px;margin:16px 0;text-align:center;background:#fff9ef;color:#604524}
+.choose-character-state h2{margin:0 0 8px;color:#a66a14;font:700 24px Georgia,serif}
+.choose-character-state p{font-size:13px;max-width:480px;margin:0 auto;line-height:1.5}

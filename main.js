@@ -1,4 +1,4 @@
-import { ITEMS, TRAITS, traitGroup, specialRules } from "./item-catalog.js";
+import { ITEMS, TRAITS, traitGroup, specialRules, armorRuleTexts } from "./item-catalog.js";
 import { createGMPanel } from "./gm.js";
 import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
 import { extractCharacter, ATTRIBUTE_GROUPS } from "./extract.js";
@@ -123,8 +123,10 @@ function itemSpecialDetails(item) {
     if (typeof trait === "string") add(trait);
     else if (trait && typeof trait === "object") add([trait.name, trait.text || trait.description].filter(Boolean).join(" — "));
   }
-  // Standard Buckler rule; keep separate from item rarity/cost metadata.
-  if (/^buckler\b/i.test(String(item.name ?? "")) && !lines.some(line => /block 1d4 dread/i.test(line))) add("Twice every Combat, Block 1d4 Dread.");
+  // Apply armor/shield rules even to characters imported before the item catalog existed.
+  for (const rule of armorRuleTexts(item)) {
+    if (!lines.some(line => line.toLowerCase().includes(rule.toLowerCase()))) add(rule);
+  }
   return lines.length ? `<div class="inventory-item-details">${lines.map(line => `<div>${esc(line)}</div>`).join("")}</div>` : "";
 }
 
@@ -213,9 +215,9 @@ function bindItemPicker() {
     choice.hidden = false;
     document.querySelector("#itemPickerChosenName").textContent = item.name;
     document.querySelector("#itemPickerDetails").textContent = `${item.type} · ${item.cost || "Cost varies"}${item.slots == null ? " · Bulky: GM approval required" : ""}${weaponRuleTexts(item).length ? " · " + weaponRuleTexts(item).join(" / ") : ""}`;
-    document.querySelector("#itemPickerWeaponRules").innerHTML = weaponUseDescription(item).map(rule => `<p>${esc(rule)}</p>`).join("");
+    document.querySelector("#itemPickerWeaponRules").innerHTML = [...weaponUseDescription(item), ...armorRuleTexts(item)].map(rule => `<p>${esc(rule)}</p>`).join("");
     document.querySelector("#itemPickerSlots").value = item.slots ?? 0;
-    document.querySelector("#itemPickerRules").value = specialRules(item);
+    document.querySelector("#itemPickerRules").value = specialRules(item).replace(/\n/g, " ");
     const traitSelect = document.querySelector("#itemPickerTrait");
     if (traitSelect) {
       const options = TRAITS[traitGroup(item.type)] || [];
@@ -491,9 +493,12 @@ function rollBroadcastText(result) {
 
 async function broadcastRollResult(result) {
   try {
-    await OBR.broadcast.sendMessage(ROLL_CHANNEL, { type: "roll-result", text: rollBroadcastText(result) }, { destination: "REMOTE" });
+    const data = { type: "roll-result", text: rollBroadcastText(result), id: `${Date.now()}-${Math.random().toString(36).slice(2)}` };
+    try { await OBR.broadcast.sendMessage(ROLL_CHANNEL, data, { destination: "ALL" }); }
+    catch (firstError) { console.warn("Retrying roll broadcast", firstError); await OBR.broadcast.sendMessage(ROLL_CHANNEL, data, { destination: "ALL" }); }
   } catch (error) {
     console.warn("Could not broadcast Land of Eem roll", error);
+    OBR.notification.show("Roll stayed on your sheet, but broadcast failed. Check connection.", "WARNING").catch(() => {});
   }
 }
 
@@ -564,13 +569,13 @@ function render(message = "") {
       <div class="token-tools"><select id="tokenSelect"><option value="">Choose a Character token…</option>${tokenOptions}</select><button id="refreshBtn" class="secondary">Refresh</button></div>
       <label class="fileBtn">Import .eem.json<input id="fileInput" type="file" accept=".json,.eem.json,application/json"></label>
     </section>
-    <section class="identity hero-card">
+    ${selectedTokenId ? `<section class="identity hero-card">
       <div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div>
       <div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div>
       <div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${portraitSource() ? `<img src="${esc(portraitSource())}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div>
-    </section>
-    ${renderWorkspace()}
-    <div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div><div class="extension-version">Land of Eem · v0.4.6</div>
+    </section>` : ""}
+    ${selectedTokenId ? renderWorkspace() : `<section class="choose-character-state" role="status"><h2>Choose a character</h2><p>Select a Character-layer token above to open its sheet. If the token has no character yet, use Import .eem.json or the Character Builder.</p></section>`}
+    ${selectedTokenId ? `<div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div>` : ""}<div class="extension-version">Land of Eem · v0.4.8</div>
   </main>`;
   app.insertAdjacentHTML("beforeend", itemPickerHTML());
   bind();

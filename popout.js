@@ -1,4 +1,4 @@
-import { ITEMS, TRAITS, traitGroup, specialRules } from "./item-catalog.js";
+import { ITEMS, TRAITS, traitGroup, specialRules, armorRuleTexts } from "./item-catalog.js";
 import { ATTRIBUTE_GROUPS } from "./extract.js";
 import { recalculateEquipmentStats, signedNumber, isWeaponItem, weaponRuleTexts, weaponUseDescription } from "./equipment.js";
 
@@ -111,8 +111,10 @@ function itemSpecialDetails(item) {
     if (typeof trait === "string") add(trait);
     else if (trait && typeof trait === "object") add([trait.name, trait.text || trait.description].filter(Boolean).join(" — "));
   }
-  // Standard Buckler rule; keep separate from item rarity/cost metadata.
-  if (/^buckler\b/i.test(String(item.name ?? "")) && !lines.some(line => /block 1d4 dread/i.test(line))) add("Twice every Combat, Block 1d4 Dread.");
+  // Apply armor/shield rules even to characters imported before the item catalog existed.
+  for (const rule of armorRuleTexts(item)) {
+    if (!lines.some(line => line.toLowerCase().includes(rule.toLowerCase()))) add(rule);
+  }
   return lines.length ? `<div class="inventory-item-details">${lines.map(line => `<div>${esc(line)}</div>`).join("")}</div>` : "";
 }
 
@@ -201,9 +203,9 @@ function bindItemPicker() {
     choice.hidden = false;
     document.querySelector("#itemPickerChosenName").textContent = item.name;
     document.querySelector("#itemPickerDetails").textContent = `${item.type} · ${item.cost || "Cost varies"}${item.slots == null ? " · Bulky: GM approval required" : ""}${weaponRuleTexts(item).length ? " · " + weaponRuleTexts(item).join(" / ") : ""}`;
-    document.querySelector("#itemPickerWeaponRules").innerHTML = weaponUseDescription(item).map(rule => `<p>${esc(rule)}</p>`).join("");
+    document.querySelector("#itemPickerWeaponRules").innerHTML = [...weaponUseDescription(item), ...armorRuleTexts(item)].map(rule => `<p>${esc(rule)}</p>`).join("");
     document.querySelector("#itemPickerSlots").value = item.slots ?? 0;
-    document.querySelector("#itemPickerRules").value = specialRules(item);
+    document.querySelector("#itemPickerRules").value = specialRules(item).replace(/\n/g, " ");
     const traitSelect = document.querySelector("#itemPickerTrait");
     if (traitSelect) {
       const options = TRAITS[traitGroup(item.type)] || [];
@@ -432,7 +434,32 @@ function rollBroadcastText(result) {
 }
 
 function broadcastRollResult(result) {
-  request("popout-broadcast-roll", { text: rollBroadcastText(result) }).catch(() => {});
+  const rollId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  request("popout-broadcast-roll", { text: rollBroadcastText(result), rollId }).then(reply => {
+    if (!reply.ok) throw Error(reply.error || "Roll broadcast failed");
+  }).catch(error => {
+    console.warn("Roll broadcast failed", error);
+    statusText = "Roll shown locally, but broadcast failed. Check Owlbear connection.";
+    const status = app.querySelector(".status"); if (status) status.textContent = statusText;
+  });
+}
+const ROLL_SETTINGS_KEY = "eem-roll-card-settings-v1";
+let rollSettingsOpen = false;
+let rollSettings = { position: "top", duration: 5 };
+function renderBroadcastSettings() {
+  return `<section class="broadcast-settings" ${rollSettingsOpen ? "" : "hidden"}>
+    <label>Broadcast position<select id="rollPositionSetting">
+      <option value="top" ${rollSettings.position === "top" ? "selected" : ""}>Top center</option>
+      <option value="left" ${rollSettings.position === "left" ? "selected" : ""}>Middle left</option>
+      <option value="right" ${rollSettings.position === "right" ? "selected" : ""}>Middle right</option>
+    </select></label><label>Display duration<select id="rollDurationSetting">
+      ${[3,5,7,10,15,0].map(n => `<option value="${n}" ${rollSettings.duration === n ? "selected" : ""}>${n === 0 ? "Until closed" : n + " seconds"}</option>`).join("")}
+    </select></label><small>These settings control the roll cards on your Owlbear screen.</small>
+  </section>`;
+}
+async function loadBroadcastSettings() {
+  try { const reply = await request("popout-get-roll-settings"); if (reply.ok && reply.settings) { rollSettings = reply.settings; if (rollSettingsOpen) render(); } }
+  catch (error) { console.warn("Broadcast settings unavailable", error); }
 }
 
 function renderRollPanel() {
@@ -448,7 +475,7 @@ function renderRollPanel() {
 }
 
 function render() {
-  app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>POPPED-OUT CHARACTER SHEET</span></div></div><div class="status">${esc(statusText)}</div></header><main class="popout-main"><section class="identity hero-card"><div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div><div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div><div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${tokenImageUrl ? `<img src="${esc(tokenImageUrl)}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div></section>${renderWorkspace()}<div class="popout-actions"><button id="builderOpenBtn" type="button">Character Builder ↗</button><button id="saveBtn" ${connected ? "" : "disabled"}>Save Character</button><button id="reloadBtn" class="secondary">Reload from Owlbear</button></div><div class="extension-version">Land of Eem · v0.4.6</div></main>`;
+  app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>POPPED-OUT CHARACTER SHEET</span></div></div><div class="status">${esc(statusText)}</div><button id="broadcastSettingsBtn" type="button" class="broadcast-settings-button">⚙ Broadcast settings</button></header><main class="popout-main">${renderBroadcastSettings()}<section class="identity hero-card"><div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div><div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div><div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${tokenImageUrl ? `<img src="${esc(tokenImageUrl)}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div></section>${renderWorkspace()}<div class="popout-actions"><button id="builderOpenBtn" type="button">Character Builder ↗</button><button id="saveBtn" ${connected ? "" : "disabled"}>Save Character</button><button id="reloadBtn" class="secondary">Reload from Owlbear</button></div><div class="extension-version">Land of Eem · v0.4.8</div></main>`;
   app.insertAdjacentHTML("beforeend", itemPickerHTML());
   bind();
 }
@@ -546,6 +573,14 @@ function bindAddedAttributes() {
 }
 
 function bind() {
+  document.querySelector("#broadcastSettingsBtn")?.addEventListener("click", () => { rollSettingsOpen = !rollSettingsOpen; render(); });
+  for (const [id, field] of [["rollPositionSetting", "position"], ["rollDurationSetting", "duration"]]) {
+    document.querySelector(`#${id}`)?.addEventListener("change", async event => {
+      rollSettings[field] = field === "duration" ? Number(event.target.value) : event.target.value;
+      try { await request("popout-save-roll-settings", { settings: rollSettings }); }
+      catch (error) { console.warn("Could not save broadcast setting", error); }
+    });
+  }
   bindItemPicker();
   document.querySelectorAll("[data-inventory-slots],[data-mag-slots]").forEach(input =>
     input.addEventListener("input", updateInventoryCapacityDisplay));
@@ -613,3 +648,5 @@ window.addEventListener("message", async event => {
 
 render();
 loadCharacter();
+
+loadBroadcastSettings();

@@ -79,6 +79,7 @@ async function rollAnchor(position) {
     transformOrigin: { horizontal: "CENTER", vertical: "TOP" }
   };
 }
+const seenRollIds = new Set();
 async function showRollCard(data) {
   const text = String(data.text ?? "").slice(0, 3000);
   if (!text) return;
@@ -106,6 +107,8 @@ OBR.onReady(async () => {
   OBR.broadcast.onMessage(ROLL_CHANNEL, async event => {
     const data = event?.data ?? {};
     if (data.type === "roll-result" && data.text) {
+      if (data.id && seenRollIds.has(data.id)) return;
+      if (data.id) { seenRollIds.add(data.id); if (seenRollIds.size > 200) seenRollIds.delete(seenRollIds.values().next().value); }
       await showRollCard(data);
     }
   });
@@ -163,8 +166,20 @@ OBR.onReady(async () => {
       } else if (msg.type === "popout-save") {
         const ok = await saveTokenPayload(msg.tokenId, msg.payload);
         reply(event.source, event.origin, msg.requestId, "popout-save-result", { ok });
+      } else if (msg.type === "popout-get-roll-settings") {
+        reply(event.source, event.origin, msg.requestId, "popout-get-roll-settings-result", { ok: true, settings: rollSettings() });
+      } else if (msg.type === "popout-save-roll-settings") {
+        const position = ["top", "left", "right"].includes(msg.settings?.position) ? msg.settings.position : "top";
+        const duration = [0, 3, 5, 7, 10, 15].includes(Number(msg.settings?.duration)) ? Number(msg.settings.duration) : 5;
+        localStorage.setItem(ROLL_SETTINGS_KEY, JSON.stringify({ position, duration }));
+        reply(event.source, event.origin, msg.requestId, "popout-save-roll-settings-result", { ok: true });
       } else if (msg.type === "popout-broadcast-roll") {
-        await OBR.broadcast.sendMessage(ROLL_CHANNEL, { type: "roll-result", text: String(msg.text ?? ""), id: `${Date.now()}-${Math.random().toString(36).slice(2)}` }, { destination: "REMOTE" });
+        const data = { type: "roll-result", text: String(msg.text ?? ""), id: String(msg.rollId || msg.requestId) };
+        try { await OBR.broadcast.sendMessage(ROLL_CHANNEL, data, { destination: "ALL" }); }
+        catch (firstError) {
+          console.warn("Retrying roll broadcast", firstError);
+          await OBR.broadcast.sendMessage(ROLL_CHANNEL, data, { destination: "ALL" });
+        }
         reply(event.source, event.origin, msg.requestId, "popout-broadcast-roll-result", { ok: true });
       }
     } catch (error) {
