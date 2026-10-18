@@ -196,3 +196,14 @@ body:not(.popout-body) .actions button {
 .choose-character-state{border:2px dashed #d09a39;border-radius:8px;padding:28px 20px;margin:16px 0;text-align:center;background:#fff9ef;color:#604524}
 .choose-character-state h2{margin:0 0 8px;color:#a66a14;font:700 24px Georgia,serif}
 .choose-character-state p{font-size:13px;max-width:480px;margin:0 auto;line-height:1.5}
+
+/* v0.5.0 temporary stat modifiers and inventory picker accessibility */
+#customItemPicker {color:#20231c !important; background:#f7e9ca !important;border:1px solid #a88545 !important}
+.temp-mod-wrap{display:inline-flex;align-items:center;gap:2px;margin-left:3px;min-width:0;vertical-align:middle;color:#1e8b51!important;font:700 9px Arial,sans-serif!important;text-transform:none!important}
+.temp-mod-wrap span{font-size:8px!important;color:#16834a!important}
+.temp-mod-wrap input.temp-mod{box-sizing:border-box;width:37px!important;min-width:34px!important;max-width:40px!important; padding:3px 2px!important;font:700 12px Arial,sans-serif!important;text-align:center;color:#16834a!important;border:1px solid #2d9860!important;background:#edf9f0!important}
+.attribute-head,.skill-row{display:flex;align-items:center;min-width:0}
+.skill-row .temp-mod-wrap,.attribute-head .temp-mod-wrap{margin-left:3px}
+.compact-vitals .temp-mod-wrap{justify-content:center;margin-top:2px}
+.session-reset-button{border:1px solid #ba8d3b;background:#f6ecd4;color:#2b4b3a;font:700 10px Arial,sans-serif;cursor:pointer;padding:5px;max-width:105px;align-self:end}
+.session-reset-button:hover{background:#e8d6a4}

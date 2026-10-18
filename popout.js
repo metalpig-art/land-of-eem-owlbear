@@ -20,7 +20,7 @@ function emptyModel() {
   return {
     name: "Unnamed adventurer", pronouns: "", portraitUrl: "", className: "", folk: "", homeland: "", level: 1,
     attributes: { Vim: 0, Vigor: 0, Knack: 0, Knowhow: 0 },
-    courageCurrent: 0, courageMax: 0, dread: "", attack: 0, defense: 0, questPoints: 0,
+    courageCurrent: 0, courageMax: 0, dread: "", attack: 0, defense: 0, questPoints: 0, tempModifiers: { attributes:{}, skills:{}, courage:0, dread:0, attack:0, defense:0, block:0 },
     block: 0, inventorySlots: 20, xp: 0,
     skills: {}, addedAttributes: [], proficiencies: [], deficiencies: [], inventory: [], magnificentItems: [], racialTraits: [], classPerks: [], abilities: [],
     ideals: "", flaws: "", backstory: "", personalQuest: "", relationships: "", ally: "", rival: "", secondRival: "", notes: "", journal: ""
@@ -35,6 +35,7 @@ function normalizeModelSheet(sheet = {}) {
   const next = { ...base, ...sheet };
   next.attributes = { ...base.attributes, ...(sheet.attributes ?? {}) };
   next.skills = { ...(sheet.skills ?? {}) };
+  next.tempModifiers = { attributes: { ...(sheet.tempModifiers?.attributes || {}) }, skills: { ...(sheet.tempModifiers?.skills || {}) }, courage: Number(sheet.tempModifiers?.courage)||0, dread: Number(sheet.tempModifiers?.dread)||0, attack: Number(sheet.tempModifiers?.attack)||0, defense: Number(sheet.tempModifiers?.defense)||0, block: Number(sheet.tempModifiers?.block)||0 };
   next.addedAttributes = Array.isArray(sheet.addedAttributes) ? sheet.addedAttributes.map(a => ({type:String(a.type||"abilities"),description:String(a.description||""),source:String(a.source||"")})) : [];
   next.inventory = Array.isArray(sheet.inventory) ? [...sheet.inventory] : [];
   next.magnificentItems = Array.isArray(sheet.magnificentItems) ? [...sheet.magnificentItems] : [];
@@ -62,10 +63,26 @@ function displayedClassPerks() {
   return [...granted, ...base];
 }
 
+function tempMod(kind, key) {
+  const value = key ? model.tempModifiers?.[kind]?.[key] : model.tempModifiers?.[kind];
+  return Number(value) || 0;
+}
+function tempBox(kind, key = "") {
+  const value = tempMod(kind, key);
+  return `<label class="temp-mod-wrap" title="Temporary modifier (cleared by Session Reset)"><span>temp</span><input class="temp-mod" type="number" step="1" data-temp-kind="${kind}" data-temp-key="${esc(key)}" value="${value}" aria-label="Temporary ${esc(key||kind)} modifier"></label>`;
+}
+function sessionReset() {
+  readForm();
+  if (!window.confirm("End session? Clear all temporary modifiers, used-ability marks, and reset Quest Points to 0?")) return;
+  model.tempModifiers = {attributes:{},skills:{},courage:0,dread:0,attack:0,defense:0,block:0};
+  model.questPoints = 0;
+  model.abilityUsage = {};
+  render("Session reset. Save character to persist the changes.");
+}
 function attributeCards() {
   return ATTRIBUTE_GROUPS.map(group => {
-    const skills = group.skills.map(skill => `<label class="skill-row nested-skill"><button type="button" class="roll-link skill-roll" data-roll-skill="${esc(skill)}">${esc(skillLabel(skill))}</button><input data-skill="${esc(skill)}" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.skills?.[skill] ?? 0))}"></label>`).join("");
-    return `<section class="attribute-card"><div class="attribute-head"><button type="button" class="roll-link attribute-roll" data-roll-attribute="${esc(group.key)}">${esc(group.key.toUpperCase())}</button><input data-attr="${esc(group.key)}" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.attributes?.[group.key] ?? 0))}"></div><div class="attribute-skills">${skills}</div></section>`;
+    const skills = group.skills.map(skill => `<label class="skill-row nested-skill"><button type="button" class="roll-link skill-roll" data-roll-skill="${esc(skill)}">${esc(skillLabel(skill))}</button><input data-skill="${esc(skill)}" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.skills?.[skill] ?? 0))}">${tempBox("skills", skill)}</label>`).join("");
+    return `<section class="attribute-card"><div class="attribute-head"><button type="button" class="roll-link attribute-roll" data-roll-attribute="${esc(group.key)}">${esc(group.key.toUpperCase())}</button><input data-attr="${esc(group.key)}" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.attributes?.[group.key] ?? 0))}">${tempBox("attributes", group.key)}</div><div class="attribute-skills">${skills}</div></section>`;
   }).join("");
 }
 
@@ -282,7 +299,7 @@ function renderTab() {
 }
 
 function renderWorkspace() {
-  return `<section class="sheet-workspace"><aside class="attribute-column sticky-attributes">${attributeCards()}</aside><section class="workspace-right"><section class="vitals card compact-vitals sticky-vitals"><div class="stat courage"><span>COURAGE</span><div><input data-field="courageCurrent" type="number" value="${esc(model.courageCurrent)}"><em>/</em><input data-field="courageMax" type="number" value="${esc(model.courageMax)}"></div></div><div class="stat"><span>DREAD</span><input data-field="dread" value="${esc(model.dread)}"></div><div class="stat"><button type="button" class="roll-link stat-roll" id="attackRollBtn">ATTACK</button><input data-field="attack" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.attack))}"></div><div class="stat"><span>DEFENSE</span><input data-field="defense" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.defense))}"></div><div class="stat"><span>QUEST PTS</span><input data-field="questPoints" type="number" value="${esc(model.questPoints)}"></div><div class="stat"><span>BLOCK †</span><input data-field="block" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.block))}"></div></section>${renderRollPanel()}<nav class="tabs workspace-tabs"><button data-tab="attributes" class="${activeTab === "attributes" ? "active" : ""}">Attributes</button><button data-tab="inventory" class="${activeTab === "inventory" ? "active" : ""}">Inventory</button><button data-tab="background" class="${activeTab === "background" ? "active" : ""}">Background</button><button data-tab="journal" class="${activeTab === "journal" ? "active" : ""}">Journal</button></nav><div class="dynamic-panel">${renderTab()}</div></section></section>`;
+  return `<section class="sheet-workspace"><aside class="attribute-column sticky-attributes">${attributeCards()}</aside><section class="workspace-right"><section class="vitals card compact-vitals sticky-vitals"><div class="stat courage"><span>COURAGE</span><div><input data-field="courageCurrent" type="number" value="${esc(model.courageCurrent)}"><em>/</em><input data-field="courageMax" type="number" value="${esc(model.courageMax)}">${tempBox("courage")}</div></div><div class="stat"><span>DREAD</span><input data-field="dread" value="${esc(model.dread)}">${tempBox("dread")}</div><div class="stat"><button type="button" class="roll-link stat-roll" id="attackRollBtn">ATTACK</button><input data-field="attack" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.attack))}">${tempBox("attack")}</div><div class="stat"><span>DEFENSE</span><input data-field="defense" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.defense))}">${tempBox("defense")}</div><div class="stat"><span>QUEST PTS</span><input data-field="questPoints" type="number" value="${esc(model.questPoints)}"></div><div class="stat"><span>BLOCK †</span><input data-field="block" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.block))}">${tempBox("block")}</div></section>${renderRollPanel()}<nav class="tabs workspace-tabs"><button data-tab="attributes" class="${activeTab === "attributes" ? "active" : ""}">Attributes</button><button data-tab="inventory" class="${activeTab === "inventory" ? "active" : ""}">Inventory</button><button data-tab="background" class="${activeTab === "background" ? "active" : ""}">Background</button><button data-tab="journal" class="${activeTab === "journal" ? "active" : ""}">Journal</button></nav><div class="dynamic-panel">${renderTab()}</div></section></section>`;
 }
 
 
@@ -310,6 +327,7 @@ function parseDread(value) {
 
 function rollDreadValue() {
   const parsed = parseDread(model.dread);
+  parsed.bonus += tempMod("dread");
   const rolls = Array.from({ length: parsed.count }, () => rollDie(parsed.sides));
   return { ...parsed, rolls, diceTotal: rolls.reduce((a, b) => a + b, 0) };
 }
@@ -337,21 +355,21 @@ function inferAttackType() {
 
 function openSkillRoll(skill) {
   readForm();
-  rollPrompt = { kind: "skill", skill, label: skillLabel(skill), modifier: Number(model.skills?.[skill]) || 0 };
+  rollPrompt = { kind: "skill", skill, label: skillLabel(skill), modifier: (Number(model.skills?.[skill]) || 0) + tempMod("skills",skill) };
   rollResult = null;
   render();
 }
 
 function openAttributeRoll(attribute) {
   readForm();
-  rollPrompt = { kind: "attribute", attribute, label: attribute, modifier: Number(model.attributes?.[attribute]) || 0 };
+  rollPrompt = { kind: "attribute", attribute, label: attribute, modifier: (Number(model.attributes?.[attribute]) || 0) + tempMod("attributes",attribute) };
   rollResult = null;
   render();
 }
 
 function openAttackRoll() {
   readForm();
-  rollPrompt = { kind: "attack", label: "Attack", modifier: Number(model.attack) || 0, attackType: inferAttackType(), targetDefense: 0 };
+  rollPrompt = { kind: "attack", label: "Attack", modifier: (Number(model.attack) || 0) + tempMod("attack"), attackType: inferAttackType(), targetDefense: 0 };
   rollResult = null;
   render();
 }
@@ -361,7 +379,7 @@ function performRoll(mode) {
   readForm();
   const d12 = rollD12(mode);
   if (rollPrompt.kind === "skill" || rollPrompt.kind === "attribute") {
-    const modifier = rollPrompt.kind === "skill" ? (Number(model.skills?.[rollPrompt.skill]) || 0) : (Number(model.attributes?.[rollPrompt.attribute]) || 0);
+    const modifier = rollPrompt.kind === "skill" ? ((Number(model.skills?.[rollPrompt.skill]) || 0) + tempMod("skills",rollPrompt.skill)) : ((Number(model.attributes?.[rollPrompt.attribute]) || 0) + tempMod("attributes",rollPrompt.attribute));
     const total = d12.chosen + modifier;
     rollResult = { kind: rollPrompt.kind, label: rollPrompt.label, mode, d12, modifier, total, outcome: checkOutcome(total) };
   } else {
@@ -369,7 +387,7 @@ function performRoll(mode) {
     const attackType = document.querySelector("#attackType")?.value || rollPrompt.attackType || "melee";
     rollPrompt.targetDefense = defense;
     rollPrompt.attackType = attackType;
-    const attack = Number(model.attack) || 0;
+    const attack = (Number(model.attack) || 0) + tempMod("attack");
     const total = d12.chosen + attack + defense;
     const outcome = attackOutcome(total, attackType);
     const dread = rollDreadValue();
@@ -446,6 +464,7 @@ function broadcastRollResult(result) {
 const ROLL_SETTINGS_KEY = "eem-roll-card-settings-v1";
 let rollSettingsOpen = false;
 let rollSettings = { position: "top", duration: 5 };
+try { rollSettings = { ...rollSettings, ...JSON.parse(localStorage.getItem(ROLL_SETTINGS_KEY)||"{}") }; } catch {}
 function renderBroadcastSettings() {
   return `<section class="broadcast-settings" ${rollSettingsOpen ? "" : "hidden"}>
     <label>Broadcast position<select id="rollPositionSetting">
@@ -475,12 +494,20 @@ function renderRollPanel() {
 }
 
 function render() {
-  app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>POPPED-OUT CHARACTER SHEET</span></div></div><div class="status">${esc(statusText)}</div><button id="broadcastSettingsBtn" type="button" class="broadcast-settings-button">⚙ Broadcast settings</button></header><main class="popout-main">${renderBroadcastSettings()}<section class="identity hero-card"><div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div><div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div><div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${tokenImageUrl ? `<img src="${esc(tokenImageUrl)}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div></section>${renderWorkspace()}<div class="popout-actions"><button id="builderOpenBtn" type="button">Character Builder ↗</button><button id="saveBtn" ${connected ? "" : "disabled"}>Save Character</button><button id="reloadBtn" class="secondary">Reload from Owlbear</button></div><div class="extension-version">Land of Eem · v0.4.9</div></main>`;
+  app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>POPPED-OUT CHARACTER SHEET</span></div></div><div class="status">${esc(statusText)}</div><button id="broadcastSettingsBtn" type="button" class="broadcast-settings-button">⚙ Broadcast settings</button></header><main class="popout-main">${renderBroadcastSettings()}<section class="identity hero-card"><div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div><div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div><div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><button type="button" id="sessionResetBtn" class="session-reset-button" title="Clear temporary modifiers and used abilities, reset Quest Points">↻ Session Reset</button><div class="portrait-slot"><div class="portrait-frame">${tokenImageUrl ? `<img src="${esc(tokenImageUrl)}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div></section>${renderWorkspace()}<div class="popout-actions"><button id="builderOpenBtn" type="button">Character Builder ↗</button><button id="saveBtn" ${connected ? "" : "disabled"}>Save Character</button><button id="reloadBtn" class="secondary">Reload from Owlbear</button></div><div class="extension-version">Land of Eem · v0.5.0</div></main>`;
   app.insertAdjacentHTML("beforeend", itemPickerHTML());
   bind();
 }
 
 function readForm() {
+  model.tempModifiers ??= {attributes:{},skills:{}};
+  model.tempModifiers.attributes ??= {};
+  model.tempModifiers.skills ??= {};
+  document.querySelectorAll("[data-temp-kind]").forEach(el => {
+    const kind=el.dataset.tempKind, key=el.dataset.tempKey;
+    if(key) model.tempModifiers[kind][key] = Number(el.value)||0;
+    else model.tempModifiers[kind] = Number(el.value)||0;
+  });
   document.querySelectorAll("[data-ability-used]").forEach(el => { const i = Number(el.dataset.abilityUsed); const key = `${i}:${String(model.abilities?.[i] ?? "")}`; model.abilityUsage ??= {}; model.abilityUsage[key] = el.checked; });
   document.querySelectorAll("[data-field]").forEach(el => { const key = el.dataset.field; model[key] = (el.type === "number" || el.dataset.number === "true") ? (Number(String(el.value).replace(/[^0-9+.-]/g, "")) || 0) : el.value; });
   document.querySelectorAll("[data-attr]").forEach(el => model.attributes[el.dataset.attr] = Number(String(el.value).replace(/[^0-9+.-]/g, "")) || 0);
@@ -573,10 +600,12 @@ function bindAddedAttributes() {
 }
 
 function bind() {
-  document.querySelector("#broadcastSettingsBtn")?.addEventListener("click", () => { rollSettingsOpen = !rollSettingsOpen; render(); });
+  document.querySelector("#sessionResetBtn")?.addEventListener("click",sessionReset);
+  document.querySelector("#broadcastSettingsBtn")?.addEventListener("click", () => { rollSettingsOpen = !rollSettingsOpen; loadBroadcastSettings(); render(); });
   for (const [id, field] of [["rollPositionSetting", "position"], ["rollDurationSetting", "duration"]]) {
     document.querySelector(`#${id}`)?.addEventListener("change", async event => {
       rollSettings[field] = field === "duration" ? Number(event.target.value) : event.target.value;
+      try { localStorage.setItem(ROLL_SETTINGS_KEY,JSON.stringify(rollSettings)); } catch {}
       try { await request("popout-save-roll-settings", { settings: rollSettings }); }
       catch (error) { console.warn("Could not save broadcast setting", error); }
     });
@@ -650,3 +679,5 @@ render();
 loadCharacter();
 
 loadBroadcastSettings();
+
+window.addEventListener("storage", event => { if (event.key === ROLL_SETTINGS_KEY) { try { rollSettings = JSON.parse(event.newValue||"{}"); if (rollSettingsOpen) render(); } catch {} } });

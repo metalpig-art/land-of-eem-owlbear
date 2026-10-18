@@ -1,3 +1,11 @@
+## v0.5.0 — Temporary bonuses, session reset and broadcast card improvements
+
+- Temporary editable green bonuses for attributes, skills and combat stats; rolling uses skill/attribute, attack and Dread bonuses.
+- Session Reset clears temporary bonuses, used ability marks and sets Quest Points to 0 after confirmation. Save to token to persist.
+- Broadcast pop-out settings use shared origin storage and refresh when opened.
+- Custom item button text is dark. Roll card highlights player name and roll label.
+- No change to permanent stat values.
+
 ## v0.4.9 — Mount Barding, pop-out broadcast, preview navigation
 
 - Barding supplies +2 Block and heavy-armor rules to the **mount only**, never the rider.
