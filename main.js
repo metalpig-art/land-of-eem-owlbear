@@ -28,7 +28,7 @@ function emptyModel() {
     courageCurrent: 0, courageMax: 0, dread: "", attack: 0, defense: 0, questPoints: 0, tempModifiers: { attributes:{}, skills:{}, courage:0, dread:0, attack:0, defense:0, block:0 },
     block: 0, inventorySlots: 20, xp: 0,
     skills: {}, addedAttributes: [], proficiencies: [], deficiencies: [], inventory: [], magnificentItems: [], racialTraits: [], classPerks: [], abilities: [],
-    ideals: "", flaws: "", backstory: "", personalQuest: "", relationships: "", ally: "", rival: "", secondRival: "", notes: "", journal: ""
+    ideals: "", flaws: "", backstory: "", personalQuest: "", relationships: "", ally: "", rival: "", secondRival: "", notes: "", journal: "", mount: { name:"", size:"", type:"", inventorySlots:0, abilities:"", description:"" }
   };
 }
 
@@ -44,6 +44,7 @@ function normalizeModelSheet(sheet = {}) {
   const base = emptyModel();
   const next = { ...base, ...sheet };
   next.attributes = { ...base.attributes, ...(sheet.attributes ?? {}) };
+  next.mount = { ...{ name:"", size:"", type:"", inventorySlots:0, abilities:"", description:"" }, ...(sheet.mount && typeof sheet.mount === "object" ? sheet.mount : {}) };
   next.skills = { ...(sheet.skills ?? {}) };
   next.tempModifiers = { attributes: { ...(sheet.tempModifiers?.attributes || {}) }, skills: { ...(sheet.tempModifiers?.skills || {}) }, courage: Number(sheet.tempModifiers?.courage)||0, dread: Number(sheet.tempModifiers?.dread)||0, attack: Number(sheet.tempModifiers?.attack)||0, defense: Number(sheet.tempModifiers?.defense)||0, block: Number(sheet.tempModifiers?.block)||0 };
   next.addedAttributes = Array.isArray(sheet.addedAttributes) ? sheet.addedAttributes.map(a => ({type:String(a.type||"abilities"),description:String(a.description||""),source:String(a.source||"")})) : [];
@@ -303,7 +304,24 @@ function inventoryRows() {
   return normalRows + magnificentRows;
 }
 
+function mountTab() {
+  const mount = model.mount || {};
+  return `<section class="tab-page mount-page">
+    <h3>Mount</h3>
+    <div class="mount-fields">
+      <label>Name<input data-mount-field="name" value="${esc(mount.name || "")}" placeholder="Mount name"></label>
+      <label>Size<input data-mount-field="size" value="${esc(mount.size || "")}" placeholder="Small, Medium, Large..."></label>
+      <label>Type<input data-mount-field="type" value="${esc(mount.type || "")}" placeholder="Horse, tortoise, other..."></label>
+      <label>Inventory Slots<input data-mount-field="inventorySlots" type="number" min="0" step="1" value="${esc(mount.inventorySlots ?? 0)}"></label>
+      <label class="mount-wide">Abilities<textarea data-mount-field="abilities" placeholder="Mount abilities and special rules">${esc(mount.abilities || "")}</textarea></label>
+      <label class="mount-wide">Description<textarea data-mount-field="description" placeholder="Appearance, personality, equipment, and notes">${esc(mount.description || "")}</textarea></label>
+    </div>
+    <p class="mount-help">Mount details are stored with the character. Mount inventory capacity is separate from the rider's inventory and does not automatically modify rider stats.</p>
+  </section>`;
+}
+
 function renderTab() {
+  if (activeTab === "mount") return mountTab();
   if (activeTab === "inventory") {
     return `<section class="tab-page inventory-page">
       <div class="inventory-summary"><strong>INVENTORY</strong>${inventoryCapacityHeader()}<span>Checked items are equipped/worn; unchecked items are carried.</span></div><div class="inventory-explanation">Slots used / available. Every five 0-slot items count as one slot. Exceeding capacity causes Overburdened.</div><div class="overburdened-warning" id="overburdenedWarning" ${inventoryCapacity().overburdened ? "" : "hidden"}><strong>OVERBURDENED</strong><span>+1 Defense; Disadvantage on Movement and Travel Checks. After more than 1 Travel Turn, become Tired.</span></div>
@@ -353,7 +371,7 @@ function renderWorkspace() {
         <div class="stat"><span>BLOCK †</span><input data-field="block" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.block))}">${tempBox("block")}</div>
       </section>
       ${renderRollPanel()}
-      <nav class="tabs workspace-tabs"><button data-tab="attributes" class="${activeTab === "attributes" ? "active" : ""}">Attributes</button><button data-tab="inventory" class="${activeTab === "inventory" ? "active" : ""}">Inventory</button><button data-tab="background" class="${activeTab === "background" ? "active" : ""}">Background</button><button data-tab="journal" class="${activeTab === "journal" ? "active" : ""}">Journal</button></nav>
+      <nav class="tabs workspace-tabs"><button data-tab="attributes" class="${activeTab === "attributes" ? "active" : ""}">Attributes</button><button data-tab="inventory" class="${activeTab === "inventory" ? "active" : ""}">Inventory</button><button data-tab="background" class="${activeTab === "background" ? "active" : ""}">Background</button><button data-tab="journal" class="${activeTab === "journal" ? "active" : ""}">Journal</button><button data-tab="mount" class="${activeTab === "mount" ? "active" : ""}">Mount</button></nav>
       <div class="dynamic-panel">${renderTab()}</div>
     </section>
   </section>`;
@@ -579,7 +597,7 @@ function render(message = "") {
   const tokenOptions = tokens.map(t => `<option value="${esc(t.id)}" ${t.id === selectedTokenId ? "selected" : ""}>${esc(tokenName(t))}</option>`).join("");
   app.innerHTML = `<header>
     <div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>OWLBEAR CHARACTER SHEET</span></div></div>
-    <div id="status" class="status">${esc(message)}</div><button id="builderOpenBtn" type="button" class="builder-open-button">Character Builder ↗</button><button type="button" id="sessionResetBtn" class="session-reset-button" title="Clear temporary modifiers and used abilities, reset Quest Points">↻ Session Reset</button><button id="broadcastSettingsBtn" class="broadcast-settings-button" type="button" aria-expanded="${rollSettingsOpen}">⚙ Broadcast settings</button>${gmAllowed ? `<button id="gmToggleBtn" class="gm-toggle" type="button">GM Page</button>` : ""}
+    <div id="status" class="status">${esc(message)}</div><button id="builderOpenBtn" type="button" class="builder-open-button">Character Builder ↗</button><button id="broadcastSettingsBtn" class="broadcast-settings-button" type="button" aria-expanded="${rollSettingsOpen}">⚙ Broadcast settings</button>${gmAllowed ? `<button id="gmToggleBtn" class="gm-toggle" type="button">GM Page</button>` : ""}<button type="button" id="sessionResetBtn" class="session-reset-button" title="Clear temporary modifiers and used abilities, reset Quest Points">↻ Session Reset</button>
   </header><main>
     ${renderRollSettings()}
     <section class="utility-row">
@@ -592,13 +610,18 @@ function render(message = "") {
       <div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${portraitSource() ? `<img src="${esc(portraitSource())}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div>
     </section>` : ""}
     ${selectedTokenId ? renderWorkspace() : `<section class="choose-character-state" role="status"><h2>Choose a character</h2><p>Select a Character-layer token above to open its sheet. If the token has no character yet, use Import .eem.json or the Character Builder.</p></section>`}
-    ${selectedTokenId ? `<div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div>` : ""}<div class="extension-version">Land of Eem · v0.5.1</div>
+    ${selectedTokenId ? `<div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div>` : ""}<div class="extension-version">Land of Eem · v0.5.2</div>
   </main>`;
   app.insertAdjacentHTML("beforeend", itemPickerHTML());
   bind();
 }
 
 function readForm() {
+  model.mount ??= { name:"", size:"", type:"", inventorySlots:0, abilities:"", description:"" };
+  document.querySelectorAll("[data-mount-field]").forEach(el => {
+    const key = el.dataset.mountField;
+    model.mount[key] = key === "inventorySlots" ? Math.max(0, Number(el.value) || 0) : el.value;
+  });
   model.tempModifiers ??= {attributes:{},skills:{}};
   model.tempModifiers.attributes ??= {};
   model.tempModifiers.skills ??= {};

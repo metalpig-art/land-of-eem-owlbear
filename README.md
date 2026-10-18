@@ -1,3 +1,10 @@
+## v0.5.2 — Temporary Modifiers, Session Reset, Mount Tab
+
+- TEMP modifier inputs now offer native up/down number arrows, with green positive values and red negative values. Positive modifiers retain a plus symbol; negative modifiers use the native minus sign.
+- Session Reset now matches the Character Builder button styling and aligns above the portrait in the sheet header.
+- Added a Mount tab after Journal with editable Name, Size, Type, Inventory Slots, Abilities, and Description. Mount information saves with character sheet data, is retained on import/export, and stays separate from rider stats.
+- Applies to embedded and pop-out Owlbear character sheets.
+
 ## v0.5.1 — Sheet layout and section-specific attributes
 
 - Widened the Owlbear dropdown to 820 px for four side-by-side attribute groups and clearer layout.

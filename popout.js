@@ -23,7 +23,7 @@ function emptyModel() {
     courageCurrent: 0, courageMax: 0, dread: "", attack: 0, defense: 0, questPoints: 0, tempModifiers: { attributes:{}, skills:{}, courage:0, dread:0, attack:0, defense:0, block:0 },
     block: 0, inventorySlots: 20, xp: 0,
     skills: {}, addedAttributes: [], proficiencies: [], deficiencies: [], inventory: [], magnificentItems: [], racialTraits: [], classPerks: [], abilities: [],
-    ideals: "", flaws: "", backstory: "", personalQuest: "", relationships: "", ally: "", rival: "", secondRival: "", notes: "", journal: ""
+    ideals: "", flaws: "", backstory: "", personalQuest: "", relationships: "", ally: "", rival: "", secondRival: "", notes: "", journal: "", mount: { name:"", size:"", type:"", inventorySlots:0, abilities:"", description:"" }
   };
 }
 
@@ -34,6 +34,7 @@ function normalizeModelSheet(sheet = {}) {
   const base = emptyModel();
   const next = { ...base, ...sheet };
   next.attributes = { ...base.attributes, ...(sheet.attributes ?? {}) };
+  next.mount = { ...{ name:"", size:"", type:"", inventorySlots:0, abilities:"", description:"" }, ...(sheet.mount && typeof sheet.mount === "object" ? sheet.mount : {}) };
   next.skills = { ...(sheet.skills ?? {}) };
   next.tempModifiers = { attributes: { ...(sheet.tempModifiers?.attributes || {}) }, skills: { ...(sheet.tempModifiers?.skills || {}) }, courage: Number(sheet.tempModifiers?.courage)||0, dread: Number(sheet.tempModifiers?.dread)||0, attack: Number(sheet.tempModifiers?.attack)||0, defense: Number(sheet.tempModifiers?.defense)||0, block: Number(sheet.tempModifiers?.block)||0 };
   next.addedAttributes = Array.isArray(sheet.addedAttributes) ? sheet.addedAttributes.map(a => ({type:String(a.type||"abilities"),description:String(a.description||""),source:String(a.source||"")})) : [];
@@ -291,7 +292,24 @@ function inventoryRows() {
   return normalRows + magnificentRows;
 }
 
+function mountTab() {
+  const mount = model.mount || {};
+  return `<section class="tab-page mount-page">
+    <h3>Mount</h3>
+    <div class="mount-fields">
+      <label>Name<input data-mount-field="name" value="${esc(mount.name || "")}" placeholder="Mount name"></label>
+      <label>Size<input data-mount-field="size" value="${esc(mount.size || "")}" placeholder="Small, Medium, Large..."></label>
+      <label>Type<input data-mount-field="type" value="${esc(mount.type || "")}" placeholder="Horse, tortoise, other..."></label>
+      <label>Inventory Slots<input data-mount-field="inventorySlots" type="number" min="0" step="1" value="${esc(mount.inventorySlots ?? 0)}"></label>
+      <label class="mount-wide">Abilities<textarea data-mount-field="abilities" placeholder="Mount abilities and special rules">${esc(mount.abilities || "")}</textarea></label>
+      <label class="mount-wide">Description<textarea data-mount-field="description" placeholder="Appearance, personality, equipment, and notes">${esc(mount.description || "")}</textarea></label>
+    </div>
+    <p class="mount-help">Mount details are stored with the character. Mount inventory capacity is separate from the rider's inventory and does not automatically modify rider stats.</p>
+  </section>`;
+}
+
 function renderTab() {
+  if (activeTab === "mount") return mountTab();
   if (activeTab === "inventory") return `<section class="tab-page inventory-page"><div class="inventory-summary"><strong>INVENTORY</strong>${inventoryCapacityHeader()}<span>Checked items are equipped/worn; unchecked items are carried.</span></div><div class="inventory-explanation">Slots used / available. Every five 0-slot items count as one slot. Exceeding capacity causes Overburdened.</div><div class="overburdened-warning" id="overburdenedWarning" ${inventoryCapacity().overburdened ? "" : "hidden"}><strong>OVERBURDENED</strong><span>+1 Defense; Disadvantage on Movement and Travel Checks. After more than 1 Travel Turn, become Tired.</span></div><table class="inventory-table"><thead><tr><th>Equip</th><th>Item</th><th>Slots</th><th>Source</th></tr></thead><tbody>${inventoryRows()}</tbody></table><div class="inventory-buttons"><button id="addInventoryBtn" class="smallBtn">+ Add item</button><button id="addMagnificentBtn" class="smallBtn secondary">+ Add Magnificent item</button></div></section>`;
   if (activeTab === "background") return `<section class="tab-page background-page"><div class="background-grid"><label>Ideals<textarea data-field="ideals">${esc(model.ideals)}</textarea></label><label>Flaws<textarea data-field="flaws">${esc(model.flaws)}</textarea></label><label>Personal Quest<textarea data-field="personalQuest">${esc(model.personalQuest)}</textarea></label><label>Backstory<textarea data-field="backstory">${esc(model.backstory)}</textarea></label><label class="wide">Relationships<textarea data-field="relationships">${esc(model.relationships)}</textarea></label><label>Ally<input data-field="ally" value="${esc(model.ally)}"></label><label>Rival<input data-field="rival" value="${esc(model.rival)}"></label><label>Second Rival<input data-field="secondRival" value="${esc(model.secondRival)}"></label><label class="wide">Notes<textarea data-field="notes">${esc(model.notes)}</textarea></label></div></section>`;
   if (activeTab === "journal") return `<section class="tab-page journal-page"><label>Journal<textarea class="journal-textarea" data-field="journal" placeholder="Session notes, clues, NPCs, plans, treasure, promises…">${esc(model.journal)}</textarea></label></section>`;
@@ -299,7 +317,7 @@ function renderTab() {
 }
 
 function renderWorkspace() {
-  return `<section class="sheet-workspace"><aside class="attribute-column sticky-attributes">${attributeCards()}</aside><section class="workspace-right"><section class="vitals card compact-vitals sticky-vitals"><div class="stat courage"><span>COURAGE</span><div><input data-field="courageCurrent" type="number" value="${esc(model.courageCurrent)}"><em>/</em><span class="courage-max-area"><input data-field="courageMax" type="number" value="${esc(model.courageMax)}">${tempBox("courage")}</span></div></div><div class="stat"><span>DREAD</span><input data-field="dread" value="${esc(model.dread)}">${tempBox("dread")}</div><div class="stat"><button type="button" class="roll-link stat-roll" id="attackRollBtn">ATTACK</button><input data-field="attack" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.attack))}">${tempBox("attack")}</div><div class="stat"><span>DEFENSE</span><input data-field="defense" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.defense))}">${tempBox("defense")}</div><div class="stat"><span>QUEST PTS</span><input data-field="questPoints" type="number" value="${esc(model.questPoints)}"></div><div class="stat"><span>BLOCK †</span><input data-field="block" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.block))}">${tempBox("block")}</div></section>${renderRollPanel()}<nav class="tabs workspace-tabs"><button data-tab="attributes" class="${activeTab === "attributes" ? "active" : ""}">Attributes</button><button data-tab="inventory" class="${activeTab === "inventory" ? "active" : ""}">Inventory</button><button data-tab="background" class="${activeTab === "background" ? "active" : ""}">Background</button><button data-tab="journal" class="${activeTab === "journal" ? "active" : ""}">Journal</button></nav><div class="dynamic-panel">${renderTab()}</div></section></section>`;
+  return `<section class="sheet-workspace"><aside class="attribute-column sticky-attributes">${attributeCards()}</aside><section class="workspace-right"><section class="vitals card compact-vitals sticky-vitals"><div class="stat courage"><span>COURAGE</span><div><input data-field="courageCurrent" type="number" value="${esc(model.courageCurrent)}"><em>/</em><span class="courage-max-area"><input data-field="courageMax" type="number" value="${esc(model.courageMax)}">${tempBox("courage")}</span></div></div><div class="stat"><span>DREAD</span><input data-field="dread" value="${esc(model.dread)}">${tempBox("dread")}</div><div class="stat"><button type="button" class="roll-link stat-roll" id="attackRollBtn">ATTACK</button><input data-field="attack" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.attack))}">${tempBox("attack")}</div><div class="stat"><span>DEFENSE</span><input data-field="defense" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.defense))}">${tempBox("defense")}</div><div class="stat"><span>QUEST PTS</span><input data-field="questPoints" type="number" value="${esc(model.questPoints)}"></div><div class="stat"><span>BLOCK †</span><input data-field="block" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.block))}">${tempBox("block")}</div></section>${renderRollPanel()}<nav class="tabs workspace-tabs"><button data-tab="attributes" class="${activeTab === "attributes" ? "active" : ""}">Attributes</button><button data-tab="inventory" class="${activeTab === "inventory" ? "active" : ""}">Inventory</button><button data-tab="background" class="${activeTab === "background" ? "active" : ""}">Background</button><button data-tab="journal" class="${activeTab === "journal" ? "active" : ""}">Journal</button><button data-tab="mount" class="${activeTab === "mount" ? "active" : ""}">Mount</button></nav><div class="dynamic-panel">${renderTab()}</div></section></section>`;
 }
 
 
@@ -494,12 +512,17 @@ function renderRollPanel() {
 }
 
 function render() {
-  app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>POPPED-OUT CHARACTER SHEET</span></div></div><div class="status">${esc(statusText)}</div><button id="broadcastSettingsBtn" type="button" class="broadcast-settings-button">⚙ Broadcast settings</button><button type="button" id="sessionResetBtn" class="session-reset-button" title="Clear temporary modifiers and used abilities, reset Quest Points">↻ Session Reset</button></header><main class="popout-main">${renderBroadcastSettings()}<section class="identity hero-card"><div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div><div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div><div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${tokenImageUrl ? `<img src="${esc(tokenImageUrl)}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div></section>${renderWorkspace()}<div class="popout-actions"><button id="builderOpenBtn" type="button">Character Builder ↗</button><button id="saveBtn" ${connected ? "" : "disabled"}>Save Character</button><button id="reloadBtn" class="secondary">Reload from Owlbear</button></div><div class="extension-version">Land of Eem · v0.5.1</div></main>`;
+  app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>POPPED-OUT CHARACTER SHEET</span></div></div><div class="status">${esc(statusText)}</div><button id="broadcastSettingsBtn" type="button" class="broadcast-settings-button">⚙ Broadcast settings</button><button type="button" id="sessionResetBtn" class="session-reset-button" title="Clear temporary modifiers and used abilities, reset Quest Points">↻ Session Reset</button></header><main class="popout-main">${renderBroadcastSettings()}<section class="identity hero-card"><div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div><div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div><div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${tokenImageUrl ? `<img src="${esc(tokenImageUrl)}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div></section>${renderWorkspace()}<div class="popout-actions"><button id="builderOpenBtn" type="button">Character Builder ↗</button><button id="saveBtn" ${connected ? "" : "disabled"}>Save Character</button><button id="reloadBtn" class="secondary">Reload from Owlbear</button></div><div class="extension-version">Land of Eem · v0.5.2</div></main>`;
   app.insertAdjacentHTML("beforeend", itemPickerHTML());
   bind();
 }
 
 function readForm() {
+  model.mount ??= { name:"", size:"", type:"", inventorySlots:0, abilities:"", description:"" };
+  document.querySelectorAll("[data-mount-field]").forEach(el => {
+    const key = el.dataset.mountField;
+    model.mount[key] = key === "inventorySlots" ? Math.max(0, Number(el.value) || 0) : el.value;
+  });
   model.tempModifiers ??= {attributes:{},skills:{}};
   model.tempModifiers.attributes ??= {};
   model.tempModifiers.skills ??= {};

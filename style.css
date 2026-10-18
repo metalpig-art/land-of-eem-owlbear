@@ -243,3 +243,24 @@ body.popout-body .attribute-column{min-width:0;overflow:visible}
 body.popout-body .attribute-card{min-width:0}
 body.popout-body .attribute-head,body.popout-body .skill-row{width:100%;min-width:0}
 @media(max-width:700px){.feature-add .add-attribute-fields{grid-template-columns:1fr 1fr}.feature-add .smallBtn{grid-column:1 / -1}.feature-add .add-attribute-fields label:nth-child(2){grid-column:auto}}
+
+/* v0.5.2: native numeric TEMP steppers and mount details */
+.temp-mod-wrap,.temp-mod-wrap .temp-control{width:55px!important;flex-basis:55px!important}
+.temp-mod-wrap .temp-control{position:relative;overflow:visible;min-height:27px}
+.temp-mod-wrap .temp-control input.temp-mod{appearance:auto!important;-moz-appearance:auto!important;width:100%!important;padding:3px 1px 3px 9px!important;font:700 11px Arial,sans-serif!important;min-width:0!important}
+.temp-mod-wrap input.temp-mod::-webkit-inner-spin-button,.temp-mod-wrap input.temp-mod::-webkit-outer-spin-button {appearance:auto!important;opacity:1!important;cursor:pointer}
+.temp-control .temp-sign{position:absolute;left:2px;top:50%;transform:translateY(-50%);width:8px;pointer-events:none;font-size:10px!important}
+.temp-mod-wrap.temp-negative .temp-sign{visibility:hidden} /* native number field already includes its minus sign */
+.attribute-head,.skill-row{grid-template-columns:minmax(0,1fr) 40px 55px!important;gap:4px!important}
+body:not(.popout-body) .attribute-head,body:not(.popout-body) .skill-row{grid-template-columns:minmax(0,1fr) 27px 48px!important;gap:2px!important}
+body:not(.popout-body) .temp-mod-wrap,body:not(.popout-body) .temp-control{width:48px!important;flex-basis:48px!important}
+body.popout-body .attribute-head,body.popout-body .skill-row{grid-template-columns:minmax(0,1fr) 40px 55px!important}
+.session-reset-button{position:absolute!important;top:48px;right:12px;left:auto;margin:0!important;z-index:11;border:1px solid #ad802f!important;background:#f1dfb3!important;color:#283e32!important;border-radius:5px!important;font:800 12px Arial,sans-serif!important;padding:6px 8px!important;white-space:nowrap}
+header{min-height:92px;padding-right:150px}
+.broadcast-settings-button{right:12px;top:10px}
+.mount-page h3{margin:0 0 12px;color:#ac6e18;font-size:17px}
+.mount-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.mount-fields .mount-wide{grid-column:1/-1}
+.mount-fields textarea{min-height:110px;line-height:1.4}
+.mount-help{font:12px/1.5 Arial;color:#73624a;margin-top:16px}
+@media(max-width:520px){.mount-fields{grid-template-columns:1fr}.mount-fields .mount-wide{grid-column:1}.session-reset-button{top:50px;right:8px;font-size:11px!important}header{padding-right:115px}}
