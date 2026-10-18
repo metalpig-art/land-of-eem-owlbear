@@ -264,3 +264,46 @@ header{min-height:92px;padding-right:150px}
 .mount-fields textarea{min-height:110px;line-height:1.4}
 .mount-help{font:12px/1.5 Arial;color:#73624a;margin-top:16px}
 @media(max-width:520px){.mount-fields{grid-template-columns:1fr}.mount-fields .mount-wide{grid-column:1}.session-reset-button{top:50px;right:8px;font-size:11px!important}header{padding-right:115px}}
+
+/* v0.5.3: consistent skill stat/temp sizes, header alignment and mount equipment */
+.attribute-head,.skill-row,
+body:not(.popout-body) .attribute-head,body:not(.popout-body) .skill-row,
+body.popout-body .attribute-head,body.popout-body .skill-row{
+  grid-template-columns:minmax(0,1fr) 52px 52px!important;
+  gap:5px!important;min-width:0!important;
+}
+.attribute-head>input:not(.temp-mod),.skill-row>input:not(.temp-mod),
+body:not(.popout-body) .attribute-head>input:not(.temp-mod),body:not(.popout-body) .skill-row>input:not(.temp-mod){
+  width:52px!important;min-width:52px!important;max-width:52px!important;
+  min-height:29px!important;padding:4px 2px!important;font-size:12px!important;
+  box-sizing:border-box!important;
+}
+.temp-mod-wrap,body:not(.popout-body) .temp-mod-wrap,body.popout-body .temp-mod-wrap,
+.temp-mod-wrap .temp-control,body:not(.popout-body) .temp-control,body.popout-body .temp-control{
+  width:52px!important;min-width:52px!important;max-width:52px!important;flex-basis:52px!important;
+  box-sizing:border-box!important;
+}
+.temp-mod-wrap .temp-control{min-height:29px!important}
+/* Use the same header row as Character Builder, while keeping Session Reset to the right. */
+header{position:sticky!important;min-height:0!important;padding-right:14px!important;
+  display:flex!important;align-items:center!important;flex-wrap:wrap!important;gap:7px!important}
+header .brand{margin-right:auto;min-width:160px}
+header .status{flex-basis:100%;order:10;margin:0}
+header .session-reset-button,header .broadcast-settings-button{
+  position:static!important;top:auto!important;right:auto!important;left:auto!important;
+  margin:0!important;align-self:center!important;min-height:31px!important;
+}
+header .session-reset-button{margin-left:auto!important;padding:7px 9px!important}
+header .builder-open-button,header .gm-toggle,header .broadcast-settings-button{align-self:center!important}
+.mount-inventory-head{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:#ce922d;color:#fff;padding:8px 12px;margin:15px 0 6px}
+.mount-inventory-head h4{font:800 14px Arial,sans-serif;margin:0}
+.mount-inventory-head span{font:700 12px Arial,sans-serif}
+.mount-item-row{display:grid;grid-template-columns:minmax(0,1.4fr) 75px minmax(0,2fr) 32px;gap:8px;
+  align-items:end;margin-bottom:7px}
+.mount-item-row input{min-width:0}
+.mount-remove-item{font-size:20px;line-height:1;min-height:32px;padding:4px;background:#9f3732}
+.mount-add-item{background:#ca8e29;color:#fff;margin-top:7px}
+@media(max-width:600px){.mount-item-row{grid-template-columns:minmax(0,1fr) 70px 32px}
+  .mount-item-row label:nth-child(3){grid-column:1/-1;grid-row:2}
+  header .brand{min-width:130px}}

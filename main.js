@@ -28,7 +28,7 @@ function emptyModel() {
     courageCurrent: 0, courageMax: 0, dread: "", attack: 0, defense: 0, questPoints: 0, tempModifiers: { attributes:{}, skills:{}, courage:0, dread:0, attack:0, defense:0, block:0 },
     block: 0, inventorySlots: 20, xp: 0,
     skills: {}, addedAttributes: [], proficiencies: [], deficiencies: [], inventory: [], magnificentItems: [], racialTraits: [], classPerks: [], abilities: [],
-    ideals: "", flaws: "", backstory: "", personalQuest: "", relationships: "", ally: "", rival: "", secondRival: "", notes: "", journal: "", mount: { name:"", size:"", type:"", inventorySlots:0, abilities:"", description:"" }
+    ideals: "", flaws: "", backstory: "", personalQuest: "", relationships: "", ally: "", rival: "", secondRival: "", notes: "", journal: "", mount: { name:"", size:"", type:"", inventorySlots:0, inventory:[], abilities:"", description:"" }
   };
 }
 
@@ -44,7 +44,8 @@ function normalizeModelSheet(sheet = {}) {
   const base = emptyModel();
   const next = { ...base, ...sheet };
   next.attributes = { ...base.attributes, ...(sheet.attributes ?? {}) };
-  next.mount = { ...{ name:"", size:"", type:"", inventorySlots:0, abilities:"", description:"" }, ...(sheet.mount && typeof sheet.mount === "object" ? sheet.mount : {}) };
+  next.mount = { ...{ name:"", size:"", type:"", inventorySlots:0, inventory:[], abilities:"", description:"" }, ...(sheet.mount && typeof sheet.mount === "object" ? sheet.mount : {}) };
+  next.mount.inventory = Array.isArray(next.mount.inventory) ? next.mount.inventory.map(item => typeof item === "string" ? {name:item,slots:0,description:""} : {...item}) : [];
   next.skills = { ...(sheet.skills ?? {}) };
   next.tempModifiers = { attributes: { ...(sheet.tempModifiers?.attributes || {}) }, skills: { ...(sheet.tempModifiers?.skills || {}) }, courage: Number(sheet.tempModifiers?.courage)||0, dread: Number(sheet.tempModifiers?.dread)||0, attack: Number(sheet.tempModifiers?.attack)||0, defense: Number(sheet.tempModifiers?.defense)||0, block: Number(sheet.tempModifiers?.block)||0 };
   next.addedAttributes = Array.isArray(sheet.addedAttributes) ? sheet.addedAttributes.map(a => ({type:String(a.type||"abilities"),description:String(a.description||""),source:String(a.source||"")})) : [];
@@ -86,9 +87,9 @@ function tempBox(kind, key = "") {
 }
 function sessionReset() {
   readForm();
-  if (!window.confirm("End session? Clear all temporary modifiers, used-ability marks, and reset Quest Points to 0?")) return;
+  if (!window.confirm("End session? Clear all temporary modifiers, used-ability marks, and restore Quest Points to Knowhow + 3?")) return;
   model.tempModifiers = {attributes:{},skills:{},courage:0,dread:0,attack:0,defense:0,block:0};
-  model.questPoints = 0;
+  model.questPoints = (Number(model.attributes?.Knowhow) || 0) + 3;
   model.abilityUsage = {};
   render("Session reset. Save character to persist the changes.");
 }
@@ -306,6 +307,8 @@ function inventoryRows() {
 
 function mountTab() {
   const mount = model.mount || {};
+  const mountItems = Array.isArray(mount.inventory) ? mount.inventory : [];
+  const used = mountItems.reduce((sum,item) => sum + Math.max(0,Number(item?.slots)||0),0);
   return `<section class="tab-page mount-page">
     <h3>Mount</h3>
     <div class="mount-fields">
@@ -316,7 +319,15 @@ function mountTab() {
       <label class="mount-wide">Abilities<textarea data-mount-field="abilities" placeholder="Mount abilities and special rules">${esc(mount.abilities || "")}</textarea></label>
       <label class="mount-wide">Description<textarea data-mount-field="description" placeholder="Appearance, personality, equipment, and notes">${esc(mount.description || "")}</textarea></label>
     </div>
-    <p class="mount-help">Mount details are stored with the character. Mount inventory capacity is separate from the rider's inventory and does not automatically modify rider stats.</p>
+    <div class="mount-inventory-head"><h4>Mount Inventory</h4><span>${used}/${Math.max(0,Number(mount.inventorySlots)||0)} slots</span></div>
+    <div class="mount-inventory-rows">${mountItems.map((item,i)=>`<div class="mount-item-row">
+      <label>Item<input data-mount-item="${i}" data-mount-item-field="name" value="${esc(item.name||"")}" placeholder="Saddlebags, Barding, supplies..."></label>
+      <label>Slots<input data-mount-item="${i}" data-mount-item-field="slots" type="number" min="0" step="1" value="${esc(item.slots??0)}"></label>
+      <label>Details<input data-mount-item="${i}" data-mount-item-field="description" value="${esc(item.description||"")}" placeholder="Special rules or notes"></label>
+      <button type="button" class="mount-remove-item" data-mount-remove="${i}" aria-label="Remove mount item" title="Remove item">×</button>
+    </div>`).join("")}</div>
+    <button type="button" class="mount-add-item" id="mountAddItem">+ Add Mount Item</button>
+    <p class="mount-help">Mount inventory is tracked separately from your character's equipment. Mount equipment does not alter the rider's Block or other stats.</p>
   </section>`;
 }
 
@@ -610,17 +621,25 @@ function render(message = "") {
       <div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${portraitSource() ? `<img src="${esc(portraitSource())}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div>
     </section>` : ""}
     ${selectedTokenId ? renderWorkspace() : `<section class="choose-character-state" role="status"><h2>Choose a character</h2><p>Select a Character-layer token above to open its sheet. If the token has no character yet, use Import .eem.json or the Character Builder.</p></section>`}
-    ${selectedTokenId ? `<div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div>` : ""}<div class="extension-version">Land of Eem · v0.5.2</div>
+    ${selectedTokenId ? `<div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div>` : ""}<div class="extension-version">Land of Eem · v0.5.3</div>
   </main>`;
   app.insertAdjacentHTML("beforeend", itemPickerHTML());
   bind();
+  document.querySelector("#mountAddItem")?.addEventListener("click", () => {readForm(); model.mount.inventory ??= []; model.mount.inventory.push({name:"",slots:0,description:""});render();});
+  document.querySelectorAll("[data-mount-remove]").forEach(btn => btn.addEventListener("click", () => {readForm();model.mount.inventory.splice(Number(btn.dataset.mountRemove),1);render();}));
 }
 
 function readForm() {
-  model.mount ??= { name:"", size:"", type:"", inventorySlots:0, abilities:"", description:"" };
+  model.mount ??= { name:"", size:"", type:"", inventorySlots:0, inventory:[], abilities:"", description:"" };
   document.querySelectorAll("[data-mount-field]").forEach(el => {
     const key = el.dataset.mountField;
     model.mount[key] = key === "inventorySlots" ? Math.max(0, Number(el.value) || 0) : el.value;
+  });
+  model.mount.inventory = Array.isArray(model.mount.inventory) ? model.mount.inventory : [];
+  document.querySelectorAll("[data-mount-item]").forEach(el => {
+    const idx = Number(el.dataset.mountItem), field = el.dataset.mountItemField;
+    if (!model.mount.inventory[idx]) model.mount.inventory[idx] = {name:"",slots:0,description:""};
+    model.mount.inventory[idx][field] = field === "slots" ? Math.max(0,Number(el.value)||0) : el.value;
   });
   model.tempModifiers ??= {attributes:{},skills:{}};
   model.tempModifiers.attributes ??= {};

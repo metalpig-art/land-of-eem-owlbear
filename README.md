@@ -1,3 +1,10 @@
+## v0.5.3 — Session reset, stat sizing, mount inventory
+
+- Session Reset restores Quest Points to permanent Knowhow + 3 after clearing temporary bonuses.
+- Attribute and TEMP modifier inputs now use matching 52px widths in both sheet views.
+- Session Reset shares the header control row and stays right-aligned.
+- Mount tab adds editable inventory rows, individual slot values, descriptions, and removal; saved with the character.
+
 ## v0.5.2 — Temporary Modifiers, Session Reset, Mount Tab
 
 - TEMP modifier inputs now offer native up/down number arrows, with green positive values and red negative values. Positive modifiers retain a plus symbol; negative modifiers use the native minus sign.
