@@ -621,7 +621,7 @@ function render(message = "") {
       <div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${portraitSource() ? `<img src="${esc(portraitSource())}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div>
     </section>` : ""}
     ${selectedTokenId ? renderWorkspace() : `<section class="choose-character-state" role="status"><h2>Choose a character</h2><p>Select a Character-layer token above to open its sheet. If the token has no character yet, use Import .eem.json or the Character Builder.</p></section>`}
-    ${selectedTokenId ? `<div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div>` : ""}<div class="extension-version">Land of Eem · v0.5.3</div>
+    ${selectedTokenId ? `<div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div>` : ""}<div class="extension-version">Land of Eem · v0.5.4</div>
   </main>`;
   app.insertAdjacentHTML("beforeend", itemPickerHTML());
   bind();

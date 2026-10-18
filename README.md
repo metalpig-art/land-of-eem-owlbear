@@ -1,4 +1,9 @@
-## v0.5.3 — Session reset, stat sizing, mount inventory
+## v0.5.4 — Exact modifier box sizes and dropdown header alignment
+- Dropdown Attribute/Skill and TEMP boxes are 30×30 pixels; pop-out boxes are 42×42 pixels.
+- Dropdown Session Reset shares the Character Builder / GM Page button row and remains right-aligned above the portrait.
+- Existing TEMP calculation and session reset behavior is unchanged.
+
+## v0.5.4 — Session reset, stat sizing, mount inventory
 
 - Session Reset restores Quest Points to permanent Knowhow + 3 after clearing temporary bonuses.
 - Attribute and TEMP modifier inputs now use matching 52px widths in both sheet views.
