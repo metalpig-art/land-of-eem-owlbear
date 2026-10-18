@@ -575,7 +575,7 @@ function render(message = "") {
       <div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${portraitSource() ? `<img src="${esc(portraitSource())}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div>
     </section>` : ""}
     ${selectedTokenId ? renderWorkspace() : `<section class="choose-character-state" role="status"><h2>Choose a character</h2><p>Select a Character-layer token above to open its sheet. If the token has no character yet, use Import .eem.json or the Character Builder.</p></section>`}
-    ${selectedTokenId ? `<div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div>` : ""}<div class="extension-version">Land of Eem · v0.4.8</div>
+    ${selectedTokenId ? `<div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div>` : ""}<div class="extension-version">Land of Eem · v0.4.9</div>
   </main>`;
   app.insertAdjacentHTML("beforeend", itemPickerHTML());
   bind();
@@ -653,6 +653,15 @@ window.addEventListener("message", async event => {
       const item = sceneItems.find(i => i.id === msg.tokenId);
       const payload = item?.metadata?.[META_KEY] ?? null;
       event.source?.postMessage({ source: EXT_ID, requestId: msg.requestId, type: "popout-load-result", ok: !!payload?.sheet, payload, tokenImageUrl: tokenPortrait(item) }, event.origin);
+    } else if (msg.type === "popout-broadcast-roll") {
+      // The dropdown is the opener for Pop Out; mirror the persistent background relay.
+      const data = {type:"roll-result", text:String(msg.text ?? ""), id:String(msg.rollId || msg.requestId)};
+      try { await OBR.broadcast.sendMessage(ROLL_CHANNEL, data, {destination:"ALL"}); }
+      catch (firstError) {
+        console.warn("Retrying pop-out roll broadcast through dropdown", firstError);
+        await OBR.broadcast.sendMessage(ROLL_CHANNEL, data, {destination:"ALL"});
+      }
+      event.source?.postMessage({source:EXT_ID,requestId:msg.requestId,type:"popout-broadcast-roll-result",ok:true},event.origin);
     } else if (msg.type === "popout-save") {
       await OBR.scene.items.updateItems([msg.tokenId], items => {
         for (const item of items) item.metadata[META_KEY] = msg.payload;

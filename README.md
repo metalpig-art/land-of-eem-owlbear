@@ -1,3 +1,9 @@
+## v0.4.9 — Mount Barding, pop-out broadcast, preview navigation
+
+- Barding supplies +2 Block and heavy-armor rules to the **mount only**, never the rider.
+- Dropdown-launched pop-out rolls now use the same Owlbear broadcast relay as right-click token pop-outs.
+- The builder preview return control remains visible at the top and returns to the builder.
+
 ## v0.4.8 — Reliable roll broadcast and navigation
 
 - Send all sheet, GM, and pop-out rolls to all participants, including the roller, with a stable roll ID for deduplicating retries.

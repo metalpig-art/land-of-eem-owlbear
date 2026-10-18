@@ -24,11 +24,16 @@ function itemText(item) {
   return parts.filter(Boolean).map(String).join(" ");
 }
 
+function isMountArmor(item) {
+  return /armor\s*\(mount\)/i.test(String(item?.type ?? "")) || /^\s*(?:Magnificent\s+)?Barding(?:\b|\s+of\s+)/i.test(String(item?.name ?? ""));
+}
+
 function isArmor(item) {
-  return /armor|breastplate|mail|bascinet|helm|greaves|gauntlet|pauldron/i.test(`${item?.type ?? ""} ${item?.name ?? ""}`);
+  return !isMountArmor(item) && /armor|breastplate|mail|bascinet|helm|greaves|gauntlet|pauldron/i.test(`${item?.type ?? ""} ${item?.name ?? ""}`);
 }
 
 function armorBlockFallback(item, text) {
+  if (isMountArmor(item)) return 0;
   if (/[-+]\s*\d+\s*Block/i.test(text)) return 0;
   const type = String(item?.type ?? "");
   if (/Armor\s*\(Heavy\)|Chest Armor\s*\(Heavy\)|Heavy Armor/i.test(type)) return 2;
@@ -72,7 +77,7 @@ function parseMaximumCourage(text) {
 }
 
 function applyItem(item, stats) {
-  if (!item?.worn) return;
+  if (!item?.worn || isMountArmor(item)) return;
   const text = itemText(item);
   stats.attack += parseSigned(text, "Attack");
   stats.defense += parseSigned(text, "Defense");

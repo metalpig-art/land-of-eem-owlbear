@@ -6,6 +6,7 @@ export function armorRuleTexts(item) {
   const type = String(item?.type ?? "").toLowerCase();
   const name = String(item?.name ?? "").replace(/^Magnificent\s+/i, "").trim().toLowerCase();
   if (!/armor|shield/.test(type) && !/^(buckler|small shield|medium shield|large shield)$/.test(name)) return [];
+  if (/mount/.test(type) || /^barding(?:\b|\s+of\s+)/.test(name)) return ["Mount armor (Heavy): The mount gains +2 Block against physical Dread while wearing it. This does not increase the rider’s Block, Defense, or armor bonuses.", "Mount gains Advantage on Resist Wounds and Defy Death, and Disadvantage on Movement Checks while wearing Barding."];
   if (/small shield/.test(type) || /^(buckler|small shield)$/.test(name)) return ["Twice every Combat, Block 1d4 Dread."];
   if (/medium shield/.test(type) || name === "medium shield") return ["Twice every Combat, Block 1d6 Dread."];
   if (/large shield/.test(type) || name === "large shield") return ["Twice every Combat, Block 1d8 Dread."];
