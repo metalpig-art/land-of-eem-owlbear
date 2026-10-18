@@ -207,3 +207,39 @@ body:not(.popout-body) .actions button {
 .compact-vitals .temp-mod-wrap{justify-content:center;margin-top:2px}
 .session-reset-button{border:1px solid #ba8d3b;background:#f6ecd4;color:#2b4b3a;font:700 10px Arial,sans-serif;cursor:pointer;padding:5px;max-width:105px;align-self:end}
 .session-reset-button:hover{background:#e8d6a4}
+
+/* v0.5.1: compact, aligned temporary modifier layout */
+.temp-mod-wrap {display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:1px!important;margin:0!important;width:37px;flex:0 0 37px;min-width:0!important;text-align:center;line-height:1}
+.temp-mod-wrap>span {display:block;font:700 8px/1 Arial,sans-serif!important;letter-spacing:.02em;color:#806f58!important;text-transform:uppercase}
+.temp-control {display:flex!important;align-items:center!important;gap:0!important;width:37px;min-width:0;border:1px solid #259158;border-radius:4px;background:#eff9f1;overflow:hidden}
+.temp-control .temp-sign {display:block;flex:0 0 9px;font:900 10px Arial,sans-serif;color:#177c42;text-align:right}
+.temp-mod-wrap .temp-control input.temp-mod {width:26px!important;min-width:0!important;max-width:none!important;flex:1!important;box-sizing:border-box!important;border:0!important;border-radius:0!important;background:transparent!important;margin:0!important;padding:3px 0!important;text-align:center!important;font:800 11px Arial,sans-serif!important;color:#177c42!important;appearance:textfield;-moz-appearance:textfield}
+.temp-mod-wrap input.temp-mod::-webkit-inner-spin-button,.temp-mod-wrap input.temp-mod::-webkit-outer-spin-button {appearance:none;margin:0}
+.temp-mod-wrap.temp-negative .temp-control {border-color:#be5144;background:#fff1ed}
+.temp-mod-wrap.temp-negative .temp-sign,.temp-mod-wrap.temp-negative input.temp-mod {color:#b23126!important}
+.attribute-head,.skill-row{display:grid!important;grid-template-columns:minmax(0,1fr) 43px 37px!important;gap:4px!important;align-items:center!important;min-width:0!important}
+.attribute-head>input:not(.temp-mod),.skill-row>input:not(.temp-mod){width:43px!important;min-width:0!important;max-width:43px!important;margin:0!important;padding:4px 1px!important}
+.attribute-head .roll-link,.skill-row .roll-link{min-width:0;overflow-wrap:anywhere;text-align:left}
+.compact-vitals>.stat{min-width:0}
+.compact-vitals>.stat>.temp-mod-wrap{margin:3px auto 0!important}
+.compact-vitals .stat.courage>div{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:start;gap:3px}
+.courage-max-area{display:flex;flex-direction:column;align-items:center;min-width:0}
+.courage-max-area>input{min-width:0;width:100%}
+.courage-max-area .temp-mod-wrap{margin:3px auto 0!important}
+.session-reset-button{position:static!important;max-width:none!important;align-self:auto!important;margin:4px 8px 3px 0;padding:7px 9px!important;white-space:nowrap}
+.hero-card .portrait-slot{grid-row:auto}
+.feature-add{margin-top:7px}
+.feature-add .add-attribute-fields{grid-template-columns:minmax(0,2fr) minmax(0,1.3fr) auto}
+.feature-add .add-attribute-toggle{font-size:10px;padding:5px 9px}
+.feature-add .smallBtn{margin:0;align-self:end}
+body:not(.popout-body) .attribute-head,body:not(.popout-body) .skill-row{grid-template-columns:minmax(0,1fr) 28px 32px!important;gap:2px!important}
+body:not(.popout-body) .attribute-head>input:not(.temp-mod),body:not(.popout-body) .skill-row>input:not(.temp-mod){width:28px!important;max-width:28px!important;font-size:9px!important}
+body:not(.popout-body) .temp-mod-wrap{width:32px;flex-basis:32px}
+body:not(.popout-body) .temp-control{width:32px}
+body:not(.popout-body) .temp-control .temp-sign{flex-basis:8px}
+body:not(.popout-body) .temp-mod-wrap .temp-control input.temp-mod{width:23px!important;font-size:10px!important}
+body.popout-body .sheet-workspace{grid-template-columns:230px minmax(0,1fr)}
+body.popout-body .attribute-column{min-width:0;overflow:visible}
+body.popout-body .attribute-card{min-width:0}
+body.popout-body .attribute-head,body.popout-body .skill-row{width:100%;min-width:0}
+@media(max-width:700px){.feature-add .add-attribute-fields{grid-template-columns:1fr 1fr}.feature-add .smallBtn{grid-column:1 / -1}.feature-add .add-attribute-fields label:nth-child(2){grid-column:auto}}

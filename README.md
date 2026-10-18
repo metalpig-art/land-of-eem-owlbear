@@ -1,3 +1,13 @@
+## v0.5.1 — Sheet layout and section-specific attributes
+
+- Widened the Owlbear dropdown to 820 px for four side-by-side attribute groups and clearer layout.
+- Temporary modifier fields now show small TEMP labels above compact green positive / red negative signed values.
+- Pop-out modifiers align in reserved narrow columns, without horizontal scrolling in the attribute panel.
+- Session Reset moved to the top action toolbar, away from the Level/XP and portrait grid.
+- Courage's temporary modifier appears beneath maximum Courage.
+- Each Proficiencies, Deficiencies, Racial Traits, Class Perks, and Abilities section has its own expandable Add button and source/description fields.
+- Existing character formats and stored added attributes remain compatible.
+
 ## v0.5.0 — Temporary bonuses, session reset and broadcast card improvements
 
 - Temporary editable green bonuses for attributes, skills and combat stats; rolling uses skill/attribute, attack and Dread bonuses.

@@ -1,6 +1,6 @@
 {
   "name": "Land of Eem Character Sheet",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "manifest_version": 1,
   "description": "Shared Land of Eem character builder plus Owlbear token sheet, dice, and GM tools.",
   "author": "metalpig - Unofficial Land of Eem Tool",
@@ -10,7 +10,7 @@
     "icon": "https://metalpig-art.github.io/land-of-eem-owlbear/icon.svg",
     "popover": "https://metalpig-art.github.io/land-of-eem-owlbear/index.html",
     "height": 780,
-    "width": 640
+    "width": 820
   },
   "background_url": "https://metalpig-art.github.io/land-of-eem-owlbear/background.html"
 }

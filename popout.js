@@ -69,7 +69,7 @@ function tempMod(kind, key) {
 }
 function tempBox(kind, key = "") {
   const value = tempMod(kind, key);
-  return `<label class="temp-mod-wrap" title="Temporary modifier (cleared by Session Reset)"><span>temp</span><input class="temp-mod" type="number" step="1" data-temp-kind="${kind}" data-temp-key="${esc(key)}" value="${value}" aria-label="Temporary ${esc(key||kind)} modifier"></label>`;
+  return `<label class="temp-mod-wrap ${value < 0 ? "temp-negative" : "temp-positive"}" title="Temporary modifier (cleared by Session Reset)"><span>temp</span><div class="temp-control"><b class="temp-sign" aria-hidden="true">${value < 0 ? "−" : "+"}</b><input class="temp-mod" type="number" step="1" data-temp-kind="${kind}" data-temp-key="${esc(key)}" value="${value}" aria-label="Temporary ${esc(key||kind)} modifier"></div></label>`;
 }
 function sessionReset() {
   readForm();
@@ -99,20 +99,20 @@ function addedRows(type) {
     ? `<li class="added-attribute"><span class="added-plus">+</span> <span>${esc(entry.description)}</span> <small>(${esc(entry.source || "Unknown source")})</small><button type="button" class="trashBtn added-delete" data-delete-added="${i}" title="Remove added attribute" aria-label="Remove added attribute">${trashIcon()}</button></li>`
     : "").join("");
 }
-function addAttributeForm() {
-  return `<section class="feature-panel add-attribute-panel"><details class="add-attribute-details"><summary class="add-attribute-toggle">+ Add Attribute</summary><div class="add-attribute-fields">
-    <label>Type<select id="addedAttributeType"><option value="proficiencies">Proficiency</option><option value="deficiencies">Deficiency</option><option value="racialTraits">Racial Trait</option><option value="classPerks">Class Perk</option><option value="abilities">Ability</option></select></label>
-    <label>Description<input id="addedAttributeDescription" placeholder="New attribute or ability" maxlength="600"></label>
-    <label>Source<input id="addedAttributeSource" placeholder="Item, quest, GM, etc." maxlength="120"></label>
-    <button type="button" class="smallBtn" id="addAttributeBtn">+ Add</button>
-  </div></details></section>`;
+function addAttributeForm(type) {
+  const titles = {proficiencies:"Proficiency", deficiencies:"Deficiency", racialTraits:"Racial Trait", classPerks:"Class Perk", abilities:"Ability"};
+  return `<div class="feature-add"><details class="add-attribute-details"><summary class="add-attribute-toggle">+ Add ${titles[type] || "Attribute"}</summary><div class="add-attribute-fields">
+    <label>Description<input class="addedAttributeDescription" placeholder="New ${esc((titles[type] || "attribute").toLowerCase())}" maxlength="600"></label>
+    <label>Source<input class="addedAttributeSource" placeholder="Item, quest, GM, etc." maxlength="120"></label>
+    <button type="button" class="smallBtn addAttributeBtn" data-add-type="${esc(type)}">+ Add</button>
+  </div></details></div>`;
 }
 
 function featureList(title, items, emptyText) {
   const rows = title === "Abilities" ? abilityRows(items) : (items ?? []).map(item => `<li>${esc(item)}</li>`).join("");
   const field = ({ "Proficiencies":"proficiencies","Deficiencies":"deficiencies","Racial Traits":"racialTraits","Class Perks":"classPerks","Abilities":"abilities" })[title];
   const additions = addedRows(field);
-  return `<section class="feature-panel"><h3>${esc(title)}</h3><ul class="feature-list">${rows || (!additions ? `<li class="empty">${esc(emptyText)}</li>` : "")}${additions}</ul></section>`;
+  return `<section class="feature-panel"><h3>${esc(title)}</h3><ul class="feature-list">${rows || (!additions ? `<li class="empty">${esc(emptyText)}</li>` : "")}${additions}</ul>${addAttributeForm(field)}</section>`;
 }
 
 function trashIcon() {
@@ -295,11 +295,11 @@ function renderTab() {
   if (activeTab === "inventory") return `<section class="tab-page inventory-page"><div class="inventory-summary"><strong>INVENTORY</strong>${inventoryCapacityHeader()}<span>Checked items are equipped/worn; unchecked items are carried.</span></div><div class="inventory-explanation">Slots used / available. Every five 0-slot items count as one slot. Exceeding capacity causes Overburdened.</div><div class="overburdened-warning" id="overburdenedWarning" ${inventoryCapacity().overburdened ? "" : "hidden"}><strong>OVERBURDENED</strong><span>+1 Defense; Disadvantage on Movement and Travel Checks. After more than 1 Travel Turn, become Tired.</span></div><table class="inventory-table"><thead><tr><th>Equip</th><th>Item</th><th>Slots</th><th>Source</th></tr></thead><tbody>${inventoryRows()}</tbody></table><div class="inventory-buttons"><button id="addInventoryBtn" class="smallBtn">+ Add item</button><button id="addMagnificentBtn" class="smallBtn secondary">+ Add Magnificent item</button></div></section>`;
   if (activeTab === "background") return `<section class="tab-page background-page"><div class="background-grid"><label>Ideals<textarea data-field="ideals">${esc(model.ideals)}</textarea></label><label>Flaws<textarea data-field="flaws">${esc(model.flaws)}</textarea></label><label>Personal Quest<textarea data-field="personalQuest">${esc(model.personalQuest)}</textarea></label><label>Backstory<textarea data-field="backstory">${esc(model.backstory)}</textarea></label><label class="wide">Relationships<textarea data-field="relationships">${esc(model.relationships)}</textarea></label><label>Ally<input data-field="ally" value="${esc(model.ally)}"></label><label>Rival<input data-field="rival" value="${esc(model.rival)}"></label><label>Second Rival<input data-field="secondRival" value="${esc(model.secondRival)}"></label><label class="wide">Notes<textarea data-field="notes">${esc(model.notes)}</textarea></label></div></section>`;
   if (activeTab === "journal") return `<section class="tab-page journal-page"><label>Journal<textarea class="journal-textarea" data-field="journal" placeholder="Session notes, clues, NPCs, plans, treasure, promises…">${esc(model.journal)}</textarea></label></section>`;
-  return `<section class="tab-page attributes-page"><div class="two-col-features">${featureList("Proficiencies", model.proficiencies, "No proficiencies")}${featureList("Deficiencies", model.deficiencies, "No deficiencies")}</div>${featureList("Racial Traits", model.racialTraits, "No racial traits")}${featureList("Class Perks", displayedClassPerks(), "No class perks")}${featureList("Abilities", model.abilities, "No abilities")}${addAttributeForm()}</section>`;
+  return `<section class="tab-page attributes-page"><div class="two-col-features">${featureList("Proficiencies", model.proficiencies, "No proficiencies")}${featureList("Deficiencies", model.deficiencies, "No deficiencies")}</div>${featureList("Racial Traits", model.racialTraits, "No racial traits")}${featureList("Class Perks", displayedClassPerks(), "No class perks")}${featureList("Abilities", model.abilities, "No abilities")}</section>`;
 }
 
 function renderWorkspace() {
-  return `<section class="sheet-workspace"><aside class="attribute-column sticky-attributes">${attributeCards()}</aside><section class="workspace-right"><section class="vitals card compact-vitals sticky-vitals"><div class="stat courage"><span>COURAGE</span><div><input data-field="courageCurrent" type="number" value="${esc(model.courageCurrent)}"><em>/</em><input data-field="courageMax" type="number" value="${esc(model.courageMax)}">${tempBox("courage")}</div></div><div class="stat"><span>DREAD</span><input data-field="dread" value="${esc(model.dread)}">${tempBox("dread")}</div><div class="stat"><button type="button" class="roll-link stat-roll" id="attackRollBtn">ATTACK</button><input data-field="attack" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.attack))}">${tempBox("attack")}</div><div class="stat"><span>DEFENSE</span><input data-field="defense" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.defense))}">${tempBox("defense")}</div><div class="stat"><span>QUEST PTS</span><input data-field="questPoints" type="number" value="${esc(model.questPoints)}"></div><div class="stat"><span>BLOCK †</span><input data-field="block" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.block))}">${tempBox("block")}</div></section>${renderRollPanel()}<nav class="tabs workspace-tabs"><button data-tab="attributes" class="${activeTab === "attributes" ? "active" : ""}">Attributes</button><button data-tab="inventory" class="${activeTab === "inventory" ? "active" : ""}">Inventory</button><button data-tab="background" class="${activeTab === "background" ? "active" : ""}">Background</button><button data-tab="journal" class="${activeTab === "journal" ? "active" : ""}">Journal</button></nav><div class="dynamic-panel">${renderTab()}</div></section></section>`;
+  return `<section class="sheet-workspace"><aside class="attribute-column sticky-attributes">${attributeCards()}</aside><section class="workspace-right"><section class="vitals card compact-vitals sticky-vitals"><div class="stat courage"><span>COURAGE</span><div><input data-field="courageCurrent" type="number" value="${esc(model.courageCurrent)}"><em>/</em><span class="courage-max-area"><input data-field="courageMax" type="number" value="${esc(model.courageMax)}">${tempBox("courage")}</span></div></div><div class="stat"><span>DREAD</span><input data-field="dread" value="${esc(model.dread)}">${tempBox("dread")}</div><div class="stat"><button type="button" class="roll-link stat-roll" id="attackRollBtn">ATTACK</button><input data-field="attack" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.attack))}">${tempBox("attack")}</div><div class="stat"><span>DEFENSE</span><input data-field="defense" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.defense))}">${tempBox("defense")}</div><div class="stat"><span>QUEST PTS</span><input data-field="questPoints" type="number" value="${esc(model.questPoints)}"></div><div class="stat"><span>BLOCK †</span><input data-field="block" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.block))}">${tempBox("block")}</div></section>${renderRollPanel()}<nav class="tabs workspace-tabs"><button data-tab="attributes" class="${activeTab === "attributes" ? "active" : ""}">Attributes</button><button data-tab="inventory" class="${activeTab === "inventory" ? "active" : ""}">Inventory</button><button data-tab="background" class="${activeTab === "background" ? "active" : ""}">Background</button><button data-tab="journal" class="${activeTab === "journal" ? "active" : ""}">Journal</button></nav><div class="dynamic-panel">${renderTab()}</div></section></section>`;
 }
 
 
@@ -494,7 +494,7 @@ function renderRollPanel() {
 }
 
 function render() {
-  app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>POPPED-OUT CHARACTER SHEET</span></div></div><div class="status">${esc(statusText)}</div><button id="broadcastSettingsBtn" type="button" class="broadcast-settings-button">⚙ Broadcast settings</button></header><main class="popout-main">${renderBroadcastSettings()}<section class="identity hero-card"><div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div><div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div><div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><button type="button" id="sessionResetBtn" class="session-reset-button" title="Clear temporary modifiers and used abilities, reset Quest Points">↻ Session Reset</button><div class="portrait-slot"><div class="portrait-frame">${tokenImageUrl ? `<img src="${esc(tokenImageUrl)}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div></section>${renderWorkspace()}<div class="popout-actions"><button id="builderOpenBtn" type="button">Character Builder ↗</button><button id="saveBtn" ${connected ? "" : "disabled"}>Save Character</button><button id="reloadBtn" class="secondary">Reload from Owlbear</button></div><div class="extension-version">Land of Eem · v0.5.0</div></main>`;
+  app.innerHTML = `<header><div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>POPPED-OUT CHARACTER SHEET</span></div></div><div class="status">${esc(statusText)}</div><button id="broadcastSettingsBtn" type="button" class="broadcast-settings-button">⚙ Broadcast settings</button><button type="button" id="sessionResetBtn" class="session-reset-button" title="Clear temporary modifiers and used abilities, reset Quest Points">↻ Session Reset</button></header><main class="popout-main">${renderBroadcastSettings()}<section class="identity hero-card"><div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div><div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div><div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${tokenImageUrl ? `<img src="${esc(tokenImageUrl)}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div></section>${renderWorkspace()}<div class="popout-actions"><button id="builderOpenBtn" type="button">Character Builder ↗</button><button id="saveBtn" ${connected ? "" : "disabled"}>Save Character</button><button id="reloadBtn" class="secondary">Reload from Owlbear</button></div><div class="extension-version">Land of Eem · v0.5.1</div></main>`;
   app.insertAdjacentHTML("beforeend", itemPickerHTML());
   bind();
 }
@@ -582,20 +582,31 @@ function updateEquipmentStats(message = "Equipment stats updated.") {
 }
 
 function bindAddedAttributes() {
-  document.querySelector("#addAttributeBtn")?.addEventListener("click", () => {
-    const type = document.querySelector("#addedAttributeType")?.value;
-    const description = document.querySelector("#addedAttributeDescription")?.value.trim();
-    const source = document.querySelector("#addedAttributeSource")?.value.trim();
-    if (!description) { document.querySelector("#addedAttributeDescription")?.focus(); return; }
+  document.querySelectorAll(".addAttributeBtn").forEach(btn => btn.addEventListener("click", () => {
+    const section = btn.closest(".feature-add");
+    const type = btn.dataset.addType;
+    const description = section?.querySelector(".addedAttributeDescription")?.value.trim();
+    const source = section?.querySelector(".addedAttributeSource")?.value.trim();
+    if (!description) { section?.querySelector(".addedAttributeDescription")?.focus(); return; }
     readForm();
     model.addedAttributes ??= [];
-    model.addedAttributes.push({type,description,source});
+    model.addedAttributes.push({type, description, source});
     render();
-  });
+  }));
   document.querySelectorAll("[data-delete-added]").forEach(btn => btn.addEventListener("click", () => {
     readForm();
     model.addedAttributes.splice(Number(btn.dataset.deleteAdded),1);
     render();
+  }));
+}
+function bindTempSigns() {
+  document.querySelectorAll(".temp-mod").forEach(input => input.addEventListener("input", () => {
+    const wrap = input.closest(".temp-mod-wrap");
+    const negative = Number(input.value) < 0;
+    wrap?.classList.toggle("temp-negative", negative);
+    wrap?.classList.toggle("temp-positive", !negative);
+    const sign = wrap?.querySelector(".temp-sign");
+    if (sign) sign.textContent = negative ? "−" : "+";
   }));
 }
 
@@ -615,6 +626,7 @@ function bind() {
     input.addEventListener("input", updateInventoryCapacityDisplay));
 
   bindAddedAttributes();
+  bindTempSigns();
   document.querySelectorAll("[data-roll-skill]").forEach(btn => btn.addEventListener("click", () => openSkillRoll(btn.dataset.rollSkill)));
   document.querySelectorAll("[data-roll-attribute]").forEach(btn => btn.addEventListener("click", () => openAttributeRoll(btn.dataset.rollAttribute)));
   document.querySelector("#attackRollBtn")?.addEventListener("click", openAttackRoll);

@@ -81,7 +81,7 @@ function tempMod(kind, key) {
 }
 function tempBox(kind, key = "") {
   const value = tempMod(kind, key);
-  return `<label class="temp-mod-wrap" title="Temporary modifier (cleared by Session Reset)"><span>temp</span><input class="temp-mod" type="number" step="1" data-temp-kind="${kind}" data-temp-key="${esc(key)}" value="${value}" aria-label="Temporary ${esc(key||kind)} modifier"></label>`;
+  return `<label class="temp-mod-wrap ${value < 0 ? "temp-negative" : "temp-positive"}" title="Temporary modifier (cleared by Session Reset)"><span>temp</span><div class="temp-control"><b class="temp-sign" aria-hidden="true">${value < 0 ? "−" : "+"}</b><input class="temp-mod" type="number" step="1" data-temp-kind="${kind}" data-temp-key="${esc(key)}" value="${value}" aria-label="Temporary ${esc(key||kind)} modifier"></div></label>`;
 }
 function sessionReset() {
   readForm();
@@ -112,19 +112,19 @@ function addedRows(type) {
     ? `<li class="added-attribute"><span class="added-plus">+</span> <span>${esc(entry.description)}</span> <small>(${esc(entry.source || "Unknown source")})</small><button type="button" class="trashBtn added-delete" data-delete-added="${i}" title="Remove added attribute" aria-label="Remove added attribute">${trashIcon()}</button></li>`
     : "").join("");
 }
-function addAttributeForm() {
-  return `<section class="feature-panel add-attribute-panel"><details class="add-attribute-details"><summary class="add-attribute-toggle">+ Add Attribute</summary><div class="add-attribute-fields">
-    <label>Type<select id="addedAttributeType"><option value="proficiencies">Proficiency</option><option value="deficiencies">Deficiency</option><option value="racialTraits">Racial Trait</option><option value="classPerks">Class Perk</option><option value="abilities">Ability</option></select></label>
-    <label>Description<input id="addedAttributeDescription" placeholder="New attribute or ability" maxlength="600"></label>
-    <label>Source<input id="addedAttributeSource" placeholder="Item, quest, GM, etc." maxlength="120"></label>
-    <button type="button" class="smallBtn" id="addAttributeBtn">+ Add</button>
-  </div></details></section>`;
+function addAttributeForm(type) {
+  const titles = {proficiencies:"Proficiency", deficiencies:"Deficiency", racialTraits:"Racial Trait", classPerks:"Class Perk", abilities:"Ability"};
+  return `<div class="feature-add"><details class="add-attribute-details"><summary class="add-attribute-toggle">+ Add ${titles[type] || "Attribute"}</summary><div class="add-attribute-fields">
+    <label>Description<input class="addedAttributeDescription" placeholder="New ${esc((titles[type] || "attribute").toLowerCase())}" maxlength="600"></label>
+    <label>Source<input class="addedAttributeSource" placeholder="Item, quest, GM, etc." maxlength="120"></label>
+    <button type="button" class="smallBtn addAttributeBtn" data-add-type="${esc(type)}">+ Add</button>
+  </div></details></div>`;
 }
 
 function featureList(title, items, field, emptyText) {
   const rows = field === "abilities" ? abilityRows(items) : (items ?? []).map(item => `<li>${esc(item)}</li>`).join("");
   const additions = addedRows(field);
-  return `<section class="feature-panel"><h3>${esc(title)}</h3><ul class="feature-list" data-feature="${esc(field)}">${rows || (!additions ? `<li class="empty">${esc(emptyText)}</li>` : "")}${additions}</ul></section>`;
+  return `<section class="feature-panel"><h3>${esc(title)}</h3><ul class="feature-list" data-feature="${esc(field)}">${rows || (!additions ? `<li class="empty">${esc(emptyText)}</li>` : "")}${additions}</ul>${addAttributeForm(field)}</section>`;
 }
 
 function trashIcon() {
@@ -337,7 +337,6 @@ function renderTab() {
     ${featureList("Racial Traits", model.racialTraits, "racialTraits", "No racial traits")}
     ${featureList("Class Perks", displayedClassPerks(), "classPerks", "No class perks")}
     ${featureList("Abilities", model.abilities, "abilities", "No abilities")}
-    ${addAttributeForm()}
   </section>`;
 }
 
@@ -346,7 +345,7 @@ function renderWorkspace() {
     <aside class="attribute-column sticky-attributes">${attributeCards()}</aside>
     <section class="workspace-right">
       <section class="vitals card compact-vitals sticky-vitals">
-        <div class="stat courage"><span>COURAGE</span><div><input data-field="courageCurrent" type="number" value="${esc(model.courageCurrent)}"><em>/</em><input data-field="courageMax" type="number" value="${esc(model.courageMax)}">${tempBox("courage")}</div></div>
+        <div class="stat courage"><span>COURAGE</span><div><input data-field="courageCurrent" type="number" value="${esc(model.courageCurrent)}"><em>/</em><span class="courage-max-area"><input data-field="courageMax" type="number" value="${esc(model.courageMax)}">${tempBox("courage")}</span></div></div>
         <div class="stat"><span>DREAD</span><input data-field="dread" value="${esc(model.dread)}">${tempBox("dread")}</div>
         <div class="stat"><button type="button" class="roll-link stat-roll" id="attackRollBtn">ATTACK</button><input data-field="attack" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.attack))}">${tempBox("attack")}</div>
         <div class="stat"><span>DEFENSE</span><input data-field="defense" data-number="true" type="text" inputmode="numeric" value="${esc(signedNumber(model.defense))}">${tempBox("defense")}</div>
@@ -580,7 +579,7 @@ function render(message = "") {
   const tokenOptions = tokens.map(t => `<option value="${esc(t.id)}" ${t.id === selectedTokenId ? "selected" : ""}>${esc(tokenName(t))}</option>`).join("");
   app.innerHTML = `<header>
     <div class="brand"><div class="mark">E</div><div><strong>LAND OF EEM</strong><span>OWLBEAR CHARACTER SHEET</span></div></div>
-    <div id="status" class="status">${esc(message)}</div><button id="builderOpenBtn" type="button" class="builder-open-button">Character Builder ↗</button><button id="broadcastSettingsBtn" class="broadcast-settings-button" type="button" aria-expanded="${rollSettingsOpen}">⚙ Broadcast settings</button>${gmAllowed ? `<button id="gmToggleBtn" class="gm-toggle" type="button">GM Page</button>` : ""}
+    <div id="status" class="status">${esc(message)}</div><button id="builderOpenBtn" type="button" class="builder-open-button">Character Builder ↗</button><button type="button" id="sessionResetBtn" class="session-reset-button" title="Clear temporary modifiers and used abilities, reset Quest Points">↻ Session Reset</button><button id="broadcastSettingsBtn" class="broadcast-settings-button" type="button" aria-expanded="${rollSettingsOpen}">⚙ Broadcast settings</button>${gmAllowed ? `<button id="gmToggleBtn" class="gm-toggle" type="button">GM Page</button>` : ""}
   </header><main>
     ${renderRollSettings()}
     <section class="utility-row">
@@ -590,10 +589,10 @@ function render(message = "") {
     ${selectedTokenId ? `<section class="identity hero-card">
       <div class="name-block"><label>Name & Pronouns<input data-field="name" value="${esc(model.name)}"></label><input class="pronouns" data-field="pronouns" value="${esc(model.pronouns)}" placeholder="Pronouns"></div>
       <div class="identity-pair"><label>Class<input data-field="className" value="${esc(model.className)}"></label><label>Folk<input data-field="folk" value="${esc(model.folk)}"></label><label>Homeland<input data-field="homeland" value="${esc(model.homeland)}"></label></div>
-      <div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><button type="button" id="sessionResetBtn" class="session-reset-button" title="Clear temporary modifiers and used abilities, reset Quest Points">↻ Session Reset</button><div class="portrait-slot"><div class="portrait-frame">${portraitSource() ? `<img src="${esc(portraitSource())}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div>
+      <div class="level-chip"><span>LV</span><b>${esc(model.level)}</b><span>XP</span><input data-field="xp" type="number" value="${esc(model.xp)}"></div><div class="portrait-slot"><div class="portrait-frame">${portraitSource() ? `<img src="${esc(portraitSource())}" alt="Character portrait" onerror="this.style.display='none'">` : `<span class="portrait-placeholder">Portrait</span>`}</div></div>
     </section>` : ""}
     ${selectedTokenId ? renderWorkspace() : `<section class="choose-character-state" role="status"><h2>Choose a character</h2><p>Select a Character-layer token above to open its sheet. If the token has no character yet, use Import .eem.json or the Character Builder.</p></section>`}
-    ${selectedTokenId ? `<div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div>` : ""}<div class="extension-version">Land of Eem · v0.5.0</div>
+    ${selectedTokenId ? `<div class="actions"><button id="saveBtn">Save to token</button><button id="popOutBtn" class="secondary">Pop Out ↗</button><button id="exportBtn" class="secondary">Export .eem.json</button></div>` : ""}<div class="extension-version">Land of Eem · v0.5.1</div>
   </main>`;
   app.insertAdjacentHTML("beforeend", itemPickerHTML());
   bind();
@@ -762,20 +761,31 @@ function updateEquipmentStats(message = "Equipment stats updated.") {
 }
 
 function bindAddedAttributes() {
-  document.querySelector("#addAttributeBtn")?.addEventListener("click", () => {
-    const type = document.querySelector("#addedAttributeType")?.value;
-    const description = document.querySelector("#addedAttributeDescription")?.value.trim();
-    const source = document.querySelector("#addedAttributeSource")?.value.trim();
-    if (!description) { document.querySelector("#addedAttributeDescription")?.focus(); return; }
+  document.querySelectorAll(".addAttributeBtn").forEach(btn => btn.addEventListener("click", () => {
+    const section = btn.closest(".feature-add");
+    const type = btn.dataset.addType;
+    const description = section?.querySelector(".addedAttributeDescription")?.value.trim();
+    const source = section?.querySelector(".addedAttributeSource")?.value.trim();
+    if (!description) { section?.querySelector(".addedAttributeDescription")?.focus(); return; }
     readForm();
     model.addedAttributes ??= [];
-    model.addedAttributes.push({type,description,source});
+    model.addedAttributes.push({type, description, source});
     render();
-  });
+  }));
   document.querySelectorAll("[data-delete-added]").forEach(btn => btn.addEventListener("click", () => {
     readForm();
     model.addedAttributes.splice(Number(btn.dataset.deleteAdded),1);
     render();
+  }));
+}
+function bindTempSigns() {
+  document.querySelectorAll(".temp-mod").forEach(input => input.addEventListener("input", () => {
+    const wrap = input.closest(".temp-mod-wrap");
+    const negative = Number(input.value) < 0;
+    wrap?.classList.toggle("temp-negative", negative);
+    wrap?.classList.toggle("temp-positive", !negative);
+    const sign = wrap?.querySelector(".temp-sign");
+    if (sign) sign.textContent = negative ? "−" : "+";
   }));
 }
 
@@ -786,6 +796,7 @@ function bind() {
     input.addEventListener("input", updateInventoryCapacityDisplay));
 
   bindAddedAttributes();
+  bindTempSigns();
   // Delegate roll clicks from the persistent app root. This keeps Attributes,
   // Skills and Attack rollable in Owlbear's embedded action popover after any render.
   app.onclick = event => {
